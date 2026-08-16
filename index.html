@@ -311,6 +311,68 @@
     margin-bottom: 14px;
   }
 
+  /* ---------- Media row: preview frame + video link ---------- */
+  .ex-media {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .ex-thumb {
+    width: 84px;
+    height: 84px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+  }
+  .ex-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .ex-thumb .ph-icon {
+    color: var(--ink-faint);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .ex-thumb .ph-icon svg { width: 26px; height: 26px; }
+  .ex-thumb .ph-icon span { font-size: 8.5px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+  .ex-thumb.loaded .ph-icon { display: none; }
+
+  .ex-video-btn {
+    flex: 1;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 14px;
+    color: var(--ink);
+    text-decoration: none;
+    min-height: 84px;
+  }
+  .ex-video-btn:active { background: var(--bg-card-active); }
+  .ex-video-btn .play-icon {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: #FF0000;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ex-video-btn .play-icon svg { width: 14px; height: 14px; fill: #fff; margin-left: 2px; }
+  .ex-video-btn .vb-text { display: flex; flex-direction: column; gap: 2px; }
+  .ex-video-btn .vb-text .vt-main { font-size: 13px; font-weight: 700; }
+  .ex-video-btn .vb-text .vt-sub { font-size: 11px; color: var(--ink-faint); }
+
   .set-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
   .set-row {
     display: flex;
@@ -1164,12 +1226,65 @@ function renderBlock(){
       setsWrap.appendChild(setRow);
     });
 
+    // Media row: image preview frame (YouTube thumbnail) + direct video link.
+    // Uses the currently-selected option name if this exercise has swap options,
+    // otherwise the exercise's own name, matched against the hardcoded VIDEO_MAP
+    // pulled directly from the source PDF's own hyperlinks.
+    const chosenIdx = state.optionChoice[id] || 0;
+    const searchName = exc.options ? exc.options[chosenIdx].split('(')[0].trim() : exc.name.split('/')[0].trim();
+    const videoId = lookupVideo(searchName) || lookupVideo(exc.name);
+    const thumbId = `thumb_${id}`;
+
+    const mediaRow = document.createElement('div');
+    mediaRow.className = 'ex-media';
+
+    if(videoId){
+      const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+      mediaRow.innerHTML = `
+        <a class="ex-thumb loaded" id="${thumbId}" href="${ytUrl}" target="_blank" rel="noopener">
+          <img src="${thumbUrl}" alt="${searchName}" loading="lazy" onerror="this.parentElement.classList.remove('loaded'); this.remove();">
+          <div class="ph-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>Preview</span>
+          </div>
+        </a>
+        <a class="ex-video-btn" href="${ytUrl}" target="_blank" rel="noopener">
+          <div class="play-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          <div class="vb-text">
+            <div class="vt-main">Watch demo</div>
+            <div class="vt-sub">${searchName}</div>
+          </div>
+        </a>
+      `;
+    } else {
+      mediaRow.innerHTML = `
+        <div class="ex-thumb" id="${thumbId}">
+          <div class="ph-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+            <span>No preview</span>
+          </div>
+        </div>
+        <div class="ex-video-btn" style="opacity:0.5;">
+          <div class="play-icon" style="background:var(--line);"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+          <div class="vb-text">
+            <div class="vt-main">No demo linked</div>
+            <div class="vt-sub">${searchName}</div>
+          </div>
+        </div>
+      `;
+    }
+
     card.innerHTML = `
       <div class="ex-name">${exc.name}</div>
       <div class="ex-meta">${exc.reps}</div>
       ${optHtml}
-      <div class="ex-note">${exc.note}</div>
     `;
+    card.appendChild(mediaRow);
+    const noteEl = document.createElement('div');
+    noteEl.className = 'ex-note';
+    noteEl.textContent = exc.note;
+    card.appendChild(noteEl);
     card.appendChild(setsWrap);
 
     const restBtn = document.createElement('button');
@@ -1184,6 +1299,111 @@ function renderBlock(){
   // nav buttons
   document.getElementById('workout-prev').style.visibility = state.blockIndex === 0 ? 'hidden' : 'visible';
   document.getElementById('workout-next').textContent = state.blockIndex === totalBlocks-1 ? 'Finish Session' : 'Next Block';
+}
+
+/* ============================================================
+   EXERCISE VIDEO LINKS
+   Extracted directly from the source PDF's own hyperlink
+   annotations — every one of these points to the exact video
+   the PDF itself links to. Thumbnails come from YouTube's public
+   thumbnail CDN (img.youtube.com), keyed off the same video ID,
+   so no separate image search or API key is needed.
+   ============================================================ */
+const VIDEO_MAP = {
+  "Hooklying Breathing": "End67j3bNMc",
+  "90/90 Hip Switch": "6tcOGbrG3l0",
+  "Quadruped Heel Sit T-Spine Rotation": "IxnQeBskPys",
+  "Spiderman Lunge with Rotation": "wQOJDsdb_-Y",
+  "Bench Reverse Plank Hip Flexor Raises": "g7L5zWor7zY",
+  "1DB Seated External Rotation": "1uYxNdH9cHc",
+  "Tall Plank Alternating Shoulder Taps": "uFRJj1C9blE",
+  "Side Lying Hip Adduction": "-X3sDsQ4QhI",
+  "Side Plank with Twist": "rh9j4JqSgv0",
+  "Seated Wall Slide": "BBPhXtvPScg",
+  "Suitcase Carry": "eqsHSCGmSmE",
+  "Box Jumps": "WadR6BlCSKY",
+  "Squat Jumps": "6dkG1CoiJik",
+  "Barbell Back Squat": "obnkFgnxQFo",
+  "Dumbbell Goblet Squat": "VpeUzs9DrDw",
+  "2DB Bent Over Reverse Flye": "453Pi7j5PHM",
+  "Cable Rear Delt Crossover Flye": "0l8rF5gtP94",
+  "Goblet Reverse Lunge": "p4zoUmtOkkw",
+  "Goblet Deficit Reverse Lunge": "jhgd1mGVx7o",
+  "2KB/2DB Farmer Carry": "zwoxFpyMuig",
+  "Tall Plank KB/DB Drag": "dzsJUXOhIzo",
+  "2DB Alternating Incline Bench Press": "4zq9waisxpA",
+  "2DB Seated Seesaw Overhead Press": "oOnppaGvEKE",
+  "Stability Ball Hamstring Curl Series": "7XVdnuaEm5Q",
+  "Tuck Up Series": "nheTMVLN2Hw",
+  "Plyo Pushup": "lNS2yPT0LJU",
+  "Barbell Bench Press": "pvtmDcyG3Jk",
+  "2DB Bench Press": "bZvwg5jmx10",
+  "1DB Suitcase Rear Foot Elevated SL Deadlift": "DCU80Fwz2N4",
+  "1DB Suitcase Staggered Stance RDL": "skVF1dhz2jQ",
+  "1/2 Kneeling Single Arm Overhead Press": "4kxlfEGuwoM",
+  "Standing Single Arm DB Overhead Press": "TZiiRF6XiQ4",
+  "DB 3-Point Row": "Y4KIH1q-yzI",
+  "2DB Lateral Raise": "6CKuzjtVWus",
+  "2DB Seated Biceps Curl": "PD92Fdenmm8",
+  "Kettlebell Swing": "alCXZG5JYtE",
+  "Broad Jumps": "MhvSVHUW-L4",
+  "Barbell Deadlift": "lvbdWmGP7I0",
+  "Trap Bar Deadlift": "iRapUCokBrc",
+  "Kettlebell Deadlift": "gm7ZdrvoSFo",
+  "Pushup Series": "2FUzDiFXNmc",
+  "Goblet Lateral Lunge": "NSt1SeWPWhc",
+  "Band Assisted Pull Up": "LWSSa1SPges",
+  "Pull Up": "l2vkCGP5Nnc",
+  "Lat Pulldown Machine": "09XfezGqLis",
+  "Goblet Cyclist Squat": "StSEXF664Ko",
+  "Standing Band/Cable Anti-Rotation Press": "y2pKWPwRdgg",
+  "KB Chain": "Q9AJ823qyPQ",
+  "DB Chain": "StouNksPynA",
+  "2DB Rear Foot Elevated Split Squat": "ywRztzTlAk4",
+  "2DB Split Squat": "_yfa389yWGM",
+  "BB Hip Thrust": "e1aBtx2zpEA",
+  "BB Romanian Deadlift": "iiStbsdh4s0",
+  "Short Lever": "rKjqYncL8L8",
+  "Long Lever": "pVI_DJhHiYM",
+  "Single Leg Calf Raise off Bumper Plate": "oPMV8kH7_E8",
+  "Weighted Single Leg Calf Raise off Bumper Plate": "Yzlxdo_En5U",
+  "2DB Romanian Deadlift": "ZFFEc232a7M",
+  "2DB Single Leg Deadlift": "CiAWrjenXzo",
+  "Single Arm DB Push Press": "pxObBdTJBbQ",
+  "Medicine Ball Floor Slam": "lw3dt_Ro96M",
+  "Seated Cable Row": "63NfYsF2bSQ",
+  "2DB Bent Over Row": "kSJS8tyq75c",
+  "2DB Lying Triceps Extensions": "H3CN-gRvpzU",
+  "Band/Cable Low Overhead Triceps Extension": "5IKoXb3PrMo",
+  "2DB Incline Bench Press": "MM6jIwFPBg8",
+  "2DB Front Raise": "dO2zrPTVzXs",
+  "2KB/2DB Thruster": "gr7TjKm0wCw",
+  "Front Plank": "B4_gxkICr5M",
+  "Leaning Wall Double Leg Calf Raises": "JWJP7mi1wJc",
+  "Leaning Wall Single Leg Calf Raises": "X2P2xiTxqFo"
+};
+
+// Exact match first; then a normalized (lowercase, no punctuation) fallback
+// match, since our exercise-name strings sometimes differ slightly in
+// formatting from the PDF's own link text (e.g. combined option names).
+const VIDEO_MAP_NORMALIZED = {};
+for(const k in VIDEO_MAP){
+  VIDEO_MAP_NORMALIZED[normalizeKey(k)] = VIDEO_MAP[k];
+}
+function normalizeKey(s){
+  return s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+}
+function lookupVideo(name){
+  if(!name) return null;
+  if(VIDEO_MAP[name]) return VIDEO_MAP[name];
+  const norm = normalizeKey(name);
+  if(VIDEO_MAP_NORMALIZED[norm]) return VIDEO_MAP_NORMALIZED[norm];
+  // partial match fallback: find a key that the name starts with or contains
+  for(const k in VIDEO_MAP){
+    const kn = normalizeKey(k);
+    if(norm.startsWith(kn) || kn.startsWith(norm)) return VIDEO_MAP[k];
+  }
+  return null;
 }
 
 function chooseOption(id, idx){
