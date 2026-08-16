@@ -1637,30 +1637,41 @@ const manifest = {
 const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
 document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
 
-// Service worker for offline support
-const SW_CODE = `
-const CACHE = 'motion-blueprint-v1';
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.add(self.registration.scope)));
-});
-self.addEventListener('activate', e => { self.clients.claim(); });
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        return caches.open(CACHE).then(c => { c.put(e.request, res.clone()); return res; });
-      }).catch(() => cached);
-    })
-  );
-});
-`;
-if('serviceWorker' in navigator){
-  const swBlob = new Blob([SW_CODE], {type:'application/javascript'});
-  const swUrl = URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swUrl).catch(()=>{ /* offline caching best-effort */ });
+// Service worker for offline support.
+// Registered from a real, static file (sw.js) at a fixed URL — this is
+// required for the browser's built-in update-detection to work at all.
+// A service worker generated fresh via a Blob URL on every load (the
+// previous approach) looks like a brand-new, unrelated worker each time,
+// so the browser can never tell "this is an updated version of the same
+// worker" and therefore never offers to update it.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').then((reg) => {
+    // If a new sw.js is deployed, this fires once the new worker has
+    // finished installing in the background (it's "waiting" to activate).
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      if (!newWorker) return;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // A new version is ready. Activate it immediately and reload
+          // so the visitor is transparently on the latest version —
+          // no manual cache-clearing required.
+          newWorker.postMessage('SKIP_WAITING');
+        }
+      });
+    });
+  }).catch(() => { /* offline caching best-effort; app still works without it */ });
+
+  // When the new service worker takes control (after SKIP_WAITING above),
+  // reload once so all fetched assets come from the new version.
+  let refreshed = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (refreshed) return;
+    refreshed = true;
+    window.location.reload();
+  });
 }
+
 </script>
 </body>
 </html>

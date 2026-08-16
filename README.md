@@ -29,7 +29,9 @@ Repo Settings → Pages → Source: `Deploy from branch` → `main` / `root` →
 
 ## Tech notes
 
-Single self-contained `index.html` — no build step, no dependencies. Uses a Web App Manifest and a Service Worker (both generated inline at runtime) to enable offline caching and home-screen installability.
+Two files: `index.html` (the app) and `sw.js` (the service worker). No build step, no dependencies. Uses a Web App Manifest (generated inline) and a real, static Service Worker file to enable offline caching and home-screen installability.
+
+**Deploying an update:** after pushing a change to `index.html`, open `sw.js` and bump `CACHE_VERSION` (e.g. `'v2'` → `'v3'`) in the same commit. This tells visitors' browsers a new version exists, so they get it automatically on their next visit — no manual cache-clearing needed. Skipping this step means the update may not reach people who've already loaded the app once, since the service worker serves the network's latest copy by default but still needs a version bump to properly retire old cached assets.
 
 ## Credit
 
