@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Motion Blueprint</title>
+<meta name="theme-color" content="#141414">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Motion">
+<link id="manifest-link" rel="manifest">
+<link id="apple-icon" rel="apple-touch-icon">
+
+<style>
+  :root{
+    --bg: #141414;
+    --bg-elevated: #1c1c1c;
+    --bg-card: #202020;
+    --bg-card-active: #262626;
+    --ink: #F5F3EE;
+    --ink-dim: #A8A49B;
+    --ink-faint: #6b675f;
+    --blue: #3B6FF0;
+    --blue-dim: #2A4A9E;
+    --green: #8FBF7F;
+    --amber: #E8A23A;
+    --line: #2c2c2c;
+    --radius: 18px;
+    --radius-sm: 12px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    height: 100%;
+    overscroll-behavior-y: none;
+    user-select: none;
+  }
+
+  @font-face {
+    font-family: 'ArchivoLocal';
+    src: local('Archivo Black');
+  }
+
+  h1, h2, h3, .display {
+    font-family: 'Archivo Black', 'Arial Black', sans-serif;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  #app {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    max-width: 560px;
+    margin: 0 auto;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen {
+    flex: 1;
+    overflow-y: auto;
+    padding: calc(var(--safe-top) + 20px) 18px calc(var(--safe-bottom) + 90px) 18px;
+    -webkit-overflow-scrolling: touch;
+    display: none;
+  }
+  .screen.active { display: block; animation: fadein 0.2s ease; }
+
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .topbar .back {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    border: none; color: var(--ink);
+    font-size: 18px;
+  }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--blue);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .page-title {
+    font-size: 26px;
+    line-height: 1.05;
+  }
+
+  /* ---------- Home ---------- */
+  .hero {
+    padding: 28px 20px 26px 20px;
+    border-radius: 22px;
+    background: linear-gradient(155deg, #1d3a8f 0%, #17255c 55%, #141414 100%);
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 160px; height: 160px;
+    border: 26px solid rgba(255,255,255,0.06);
+    border-radius: 40% 60% 55% 45%;
+  }
+  .hero .brand {
+    font-size: 13px;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .hero .logo-mark { display:flex; gap:2px; }
+  .hero .logo-mark span {
+    width: 5px; height: 14px;
+    background: #fff; border-radius: 2px;
+    display: inline-block;
+  }
+  .hero .logo-mark span:nth-child(2){ height: 19px; }
+  .hero .logo-mark span:nth-child(3){ height: 24px; }
+  .hero h1 {
+    font-size: 34px;
+    color: #fff;
+    line-height: 0.98;
+  }
+  .hero p {
+    color: rgba(255,255,255,0.75);
+    font-size: 14px;
+    margin-top: 10px;
+    font-style: italic;
+    max-width: 90%;
+  }
+
+  .plan-select {
+    display: flex; flex-direction: column; gap: 12px;
+    margin-bottom: 26px;
+  }
+  .plan-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    display: flex; align-items: center; gap: 14px;
+    text-align: left;
+  }
+  .plan-card:active { background: var(--bg-card-active); }
+  .plan-card .num {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 28px;
+    color: var(--blue);
+    min-width: 44px;
+  }
+  .plan-card .info { flex: 1; }
+  .plan-card .info .t { font-size: 16px; font-weight: 700; margin-bottom: 3px; }
+  .plan-card .info .d { font-size: 12.5px; color: var(--ink-dim); line-height: 1.4; }
+  .plan-card .chev { color: var(--ink-faint); font-size: 20px; }
+
+  .section-label {
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 24px 0 10px 2px;
+    font-weight: 700;
+  }
+
+  .quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .quick-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    color: var(--ink);
+    font-size: 13.5px;
+    font-weight: 600;
+    text-align: left;
+  }
+  .quick-btn small { display:block; color: var(--ink-dim); font-weight: 400; margin-top: 2px; font-size: 11.5px; }
+
+  /* ---------- Day list ---------- */
+  .day-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .day-card:active { background: var(--bg-card-active); }
+  .day-card .tag {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 20px;
+    color: var(--blue);
+    background: rgba(59,111,240,0.12);
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .day-card .info { flex: 1; }
+  .day-card .info .t { font-size: 15.5px; font-weight: 700; }
+  .day-card .info .d { font-size: 12.5px; color: var(--ink-dim); margin-top: 2px; }
+  .day-card .status {
+    font-size: 11px;
+    color: var(--green);
+    font-weight: 700;
+  }
+
+  /* ---------- Workout flow ---------- */
+  .progress-track {
+    display: flex; gap: 5px;
+    margin-bottom: 20px;
+  }
+  .progress-track .seg {
+    flex: 1; height: 4px; border-radius: 2px;
+    background: var(--line);
+  }
+  .progress-track .seg.done { background: var(--blue); }
+  .progress-track .seg.current { background: var(--amber); }
+
+  .block-label {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    padding: 5px 10px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+  }
+
+  .option-toggle {
+    display: flex;
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+  }
+  .option-toggle button {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--ink-dim);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 9px 6px;
+    border-radius: 9px;
+  }
+  .option-toggle button.active {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .exercise-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .exercise-card .ex-name {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 4px;
+  }
+  .exercise-card .ex-meta {
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .exercise-card .ex-note {
+    font-size: 13px;
+    color: var(--ink-dim);
+    line-height: 1.45;
+    margin-bottom: 14px;
+  }
+
+  .set-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+  .set-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-elevated);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .set-row .set-idx {
+    width: 22px; font-size: 13px; color: var(--ink-faint); font-weight: 700;
+  }
+  .set-row input {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+    font-size: 14px;
+    padding: 8px;
+    width: 58px;
+    text-align: center;
+    font-family: inherit;
+  }
+  .set-row .lbl { font-size: 10.5px; color: var(--ink-faint); display:block; margin-bottom:2px; }
+  .set-row .fld { display:flex; flex-direction:column; }
+  .set-row .check {
+    margin-left: auto;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 2px solid var(--line);
+    background: transparent;
+    color: transparent;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .set-row .check.checked {
+    background: var(--green);
+    border-color: var(--green);
+    color: #12261a;
+  }
+
+  .rest-btn {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px dashed var(--line);
+    color: var(--ink-dim);
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+
+  .nav-buttons {
+    display: flex; gap: 10px;
+    margin-top: 22px;
+  }
+  .btn-primary {
+    flex: 1;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    padding: 16px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+  .btn-primary:active { background: var(--blue-dim); }
+  .btn-ghost {
+    background: var(--bg-card);
+    color: var(--ink-dim);
+    border: 1px solid var(--line);
+    padding: 16px 18px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  /* ---------- Bottom nav ---------- */
+  .tabbar {
+    display: flex;
+    background: rgba(20,20,20,0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--line);
+    padding: 10px 6px calc(var(--safe-bottom) + 8px) 6px;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    z-index: 20;
+  }
+  .tabbar button {
+    flex: 1;
+    background: none; border: none;
+    color: var(--ink-faint);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 4px 0;
+  }
+  .tabbar button.active { color: var(--blue); }
+  .tabbar svg { width: 22px; height: 22px; }
+
+  /* ---------- RPE dial (signature element) ---------- */
+  .rpe-wrap {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 10px 0 4px 0;
+  }
+  .rpe-dial {
+    width: 210px; height: 210px;
+    border-radius: 50%;
+    position: relative;
+    background: conic-gradient(from -90deg,
+      var(--green) 0deg, var(--green) 144deg,
+      var(--amber) 144deg, var(--amber) 252deg,
+      #e35b5b 252deg, #e35b5b 324deg,
+      #b23b3b 324deg, #b23b3b 360deg);
+    display: flex; align-items: center; justify-content: center;
+    touch-action: none;
+  }
+  .rpe-dial::before {
+    content: "";
+    position: absolute;
+    width: 168px; height: 168px;
+    background: var(--bg);
+    border-radius: 50%;
+  }
+  .rpe-dial .rpe-readout {
+    position: relative; z-index: 2;
+    text-align: center;
+  }
+  .rpe-dial .rpe-readout .n {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 52px;
+    line-height: 1;
+  }
+  .rpe-dial .rpe-readout .l {
+    font-size: 11px;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 4px;
+  }
+  .rpe-dial .knob {
+    position: absolute;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid var(--bg);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    z-index: 3;
+  }
+  .rpe-scale-hint {
+    font-size: 12px; color: var(--ink-faint);
+    margin-top: 14px; text-align: center;
+    max-width: 260px; line-height: 1.5;
+  }
+
+  /* ---------- Timer overlay ---------- */
+  .timer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,10,10,0.97);
+    z-index: 100;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .timer-overlay.active { display: flex; }
+  .timer-ring-wrap { position: relative; width: 260px; height: 260px; }
+  .timer-ring-wrap svg { transform: rotate(-90deg); width: 260px; height: 260px; }
+  .timer-ring-bg { fill: none; stroke: var(--bg-card); stroke-width: 10; }
+  .timer-ring-fg { fill: none; stroke: var(--amber); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .timer-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .timer-center .tn { font-family: 'Archivo Black', sans-serif; font-size: 56px; }
+  .timer-center .tl { font-size: 13px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+  .timer-controls { display: flex; gap: 14px; margin-top: 34px; }
+  .timer-controls button {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 14px 22px;
+    border-radius: 14px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .timer-controls button.skip { background: var(--blue); border-color: var(--blue); }
+
+  /* ---------- Warm-up ---------- */
+  .warmup-step {
+    display: flex; gap: 14px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .warmup-step:last-child { border-bottom: none; }
+  .warmup-step .wstep-num {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 20px;
+    color: var(--blue);
+    min-width: 30px;
+  }
+  .warmup-step .wstep-body .t { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+  .warmup-step .wstep-body .m { font-size: 12.5px; color: var(--amber); font-weight: 700; margin-bottom: 4px; }
+  .warmup-step .wstep-body .d { font-size: 13px; color: var(--ink-dim); line-height: 1.45; }
+  .wstep-check {
+    margin-left: auto; align-self: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--line); background: transparent; flex-shrink:0;
+  }
+  .wstep-check.checked { background: var(--green); border-color: var(--green); }
+
+  /* ---------- Finisher / complete ---------- */
+  .complete-wrap {
+    text-align: center;
+    padding: 50px 10px 20px 10px;
+  }
+  .complete-wrap .ring {
+    width: 96px; height: 96px;
+    border-radius: 50%;
+    background: var(--green);
+    display: flex; align-items:center; justify-content:center;
+    margin: 0 auto 20px auto;
+    font-size: 42px;
+    color: #12261a;
+  }
+  .complete-wrap h2 { font-size: 24px; margin-bottom: 8px; }
+  .complete-wrap p { color: var(--ink-dim); font-size: 14px; }
+
+  .info-box {
+    background: rgba(59,111,240,0.1);
+    border: 1px solid rgba(59,111,240,0.25);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 13px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    margin-bottom: 18px;
+  }
+  .info-box b { color: var(--ink); }
+
+  .rpe-mini {
+    display: flex; gap: 6px; margin-top: 4px;
+  }
+  .rpe-mini span {
+    font-size: 10.5px; padding: 4px 8px; border-radius: 6px;
+    background: var(--bg-elevated); color: var(--ink-faint);
+  }
+
+  ::-webkit-scrollbar { display: none; }
+
+  .toast {
+    position: fixed;
+    bottom: 100px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.25s ease;
+    z-index: 200;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============ HOME ============ -->
+  <div class="screen active" id="screen-home">
+    <div class="hero">
+      <div class="brand"><span class="logo-mark"><span></span><span></span><span></span></span> Theory of Motion</div>
+      <h1>Motion<br>Blueprint</h1>
+      <p>For the athlete in everyone.</p>
+    </div>
+
+    <div class="section-label">Choose your path</div>
+    <div class="plan-select">
+      <button class="plan-card" onclick="openPlan('total')">
+        <div class="num">3</div>
+        <div class="info">
+          <div class="t">Total Body Blueprint</div>
+          <div class="d">3 full-body sessions/week · efficient, hits every pattern</div>
+        </div>
+        <div class="chev">›</div>
+      </button>
+      <button class="plan-card" onclick="openPlan('upperlower')">
+        <div class="num">4</div>
+        <div class="info">
+          <div class="t">Upper / Lower Blueprint</div>
+          <div class="d">4 split sessions/week · more volume &amp; progression</div>
+        </div>
+        <div class="chev">›</div>
+      </button>
+    </div>
+
+    <div class="section-label">Quick access</div>
+    <div class="quick-grid">
+      <button class="quick-btn" onclick="showScreen('screen-warmup-select')">Warm-Up Flows<small>6-step daily prep</small></button>
+      <button class="quick-btn" onclick="showScreen('screen-guide')">Training Guide<small>RPE · supersets · overload</small></button>
+      <button class="quick-btn" onclick="showScreen('screen-progress')">My Progress<small>Logged sessions</small></button>
+      <button class="quick-btn" onclick="showScreen('screen-about')">Coaches' Note<small>Jason &amp; Lauren</small></button>
+    </div>
+  </div>
+
+  <!-- ============ PLAN: DAY LIST ============ -->
+  <div class="screen" id="screen-daylist">
+    <div class="topbar">
+      <button class="back" onclick="showScreen('screen-home')">‹</button>
+    </div>
+    <div class="eyebrow" id="daylist-eyebrow">PLAN</div>
+    <h2 class="page-title" id="daylist-title">Total Body</h2>
+    <div id="daylist-items" style="margin-top:20px;"></div>
+  </div>
+
+  <!-- ============ WARM-UP SELECT ============ -->
+  <div class="screen" id="screen-warmup-select">
+    <div class="topbar">
+      <button class="back" onclick="showScreen('screen-home')">‹</button>
+    </div>
+    <div class="eyebrow">FOUNDATION</div>
+    <h2 class="page-title">The Warm-Up</h2>
+    <p style="color:var(--ink-dim);font-size:13.5px;margin-top:10px;line-height:1.5;">Steps 1–4 stay the same every day. Steps 5–6 (Prehab &amp; Core) rotate through the day's focus.</p>
+    <div style="margin-top:18px;" id="warmup-day-list"></div>
+  </div>
+
+  <!-- ============ WARM-UP DETAIL ============ -->
+  <div class="screen" id="screen-warmup-detail">
+    <div class="topbar">
+      <button class="back" onclick="showScreen('screen-warmup-select')">‹</button>
+    </div>
+    <div class="eyebrow" id="warmup-detail-eyebrow">DAY 1 · LOWER FOCUS</div>
+    <h2 class="page-title">Warm-Up Flow</h2>
+    <div id="warmup-detail-steps" style="margin-top:16px;"></div>
+    <div class="nav-buttons">
+      <button class="btn-primary" onclick="showScreen('screen-warmup-select')">Done</button>
+    </div>
+  </div>
+
+  <!-- ============ WORKOUT (BLOCK BY BLOCK) ============ -->
+  <div class="screen" id="screen-workout">
+    <div class="topbar">
+      <button class="back" onclick="exitWorkout()">‹</button>
+      <div style="font-size:12px;color:var(--ink-faint);font-weight:700;" id="workout-block-count"></div>
+    </div>
+    <div class="progress-track" id="workout-progress"></div>
+    <div id="workout-block-content"></div>
+    <div class="nav-buttons">
+      <button class="btn-ghost" id="workout-prev" onclick="prevBlock()">Back</button>
+      <button class="btn-primary" id="workout-next" onclick="nextBlock()">Next</button>
+    </div>
+  </div>
+
+  <!-- ============ WORKOUT COMPLETE ============ -->
+  <div class="screen" id="screen-complete">
+    <div class="complete-wrap">
+      <div class="ring">✓</div>
+      <h2>Session Logged</h2>
+      <p id="complete-summary">Nice work. Recovery starts now.</p>
+    </div>
+    <div class="nav-buttons">
+      <button class="btn-primary" onclick="showScreen('screen-home')">Back to Home</button>
+    </div>
+  </div>
+
+  <!-- ============ GUIDE ============ -->
+  <div class="screen" id="screen-guide">
+    <div class="topbar">
+      <button class="back" onclick="showScreen('screen-home')">‹</button>
+    </div>
+    <div class="eyebrow">BEFORE WE BEGIN</div>
+    <h2 class="page-title">Training Guide</h2>
+
+    <div class="section-label" style="margin-top:24px;">Rate of Perceived Exertion</div>
+    <div class="rpe-wrap">
+      <div class="rpe-dial" id="guide-rpe-dial">
+        <div class="knob" id="guide-rpe-knob"></div>
+        <div class="rpe-readout"><div class="n" id="guide-rpe-num">7</div><div class="l">RPE</div></div>
+      </div>
+      <div class="rpe-scale-hint">Drag the dial. <b style="color:var(--ink)">6–8</b> is the target zone for most working sets — hard, but with reps left in reserve.</div>
+    </div>
+
+    <div class="section-label">Supersets</div>
+    <div class="info-box">Two exercises back-to-back, little to no rest between. Saves time and keeps intensity high. Feeling too gassed to hold form? Straight sets (finish all sets of one move, then the next) work just as well — pick what fits your energy.</div>
+
+    <div class="section-label">Progressive Overload</div>
+    <div class="info-box">Each week, try to add a little <b>more weight</b>, <b>1 more rep</b>, or <b>1 more set</b> than last time. You don't need to progress everything at once — small, steady gains compound over months.</div>
+
+    <div class="section-label">RPE Reference</div>
+    <div class="info-box" style="display:flex;flex-direction:column;gap:10px;">
+      <div><b style="color:var(--green)">RPE 1–4</b> — Very easy to light. Warm-ups, technique work.</div>
+      <div><b style="color:var(--amber)">RPE 5–6</b> — Moderate. 4–5 reps left in reserve.</div>
+      <div><b style="color:#e35b5b">RPE 7–8</b> — Hard. 2–3 reps left in reserve. <i>(Target zone)</i></div>
+      <div><b style="color:#b23b3b">RPE 9–10</b> — Max effort. 0–1 reps left in reserve.</div>
+    </div>
+
+    <div class="section-label">Workout Flow</div>
+    <div class="info-box">Every session follows: <b>Warm-Up → Power → Strength Supersets → Finisher.</b> The first 4 warm-up steps never change; Prehab &amp; Core rotate by day.</div>
+  </div>
+
+  <!-- ============ PROGRESS ============ -->
+  <div class="screen" id="screen-progress">
+    <div class="topbar">
+      <button class="back" onclick="showScreen('screen-home')">‹</button>
+    </div>
+    <div class="eyebrow">TRACKED</div>
+    <h2 class="page-title">My Progress</h2>
+    <div id="progress-list" style="margin-top:20px;"></div>
+  </div>
+
+  <!-- ============ ABOUT ============ -->
+  <div class="screen" id="screen-about">
+    <div class="topbar">
+      <button class="back" onclick="showScreen('screen-home')">‹</button>
+    </div>
+    <div class="eyebrow">A NOTE FROM</div>
+    <h2 class="page-title">Jason &amp; Lauren</h2>
+    <p style="color:var(--ink-dim);font-size:14px;line-height:1.6;margin-top:16px;">Thank you for trusting us with your training journey. We've spent over 15 years coaching thousands of people in person and sharing our message with millions online.</p>
+    <p style="color:var(--ink-dim);font-size:14px;line-height:1.6;margin-top:12px;">Our hope is that you finish these workouts not just feeling stronger, but more confident in your ability to move, recover, and take on whatever life throws your way.</p>
+    <p style="color:var(--ink);font-size:14px;line-height:1.6;margin-top:12px;font-style:italic;">Keep moving with purpose.</p>
+    <p style="color:var(--ink-dim);font-size:13px;margin-top:18px;">theoryofmotion.co</p>
+  </div>
+
+  <!-- ============ TAB BAR ============ -->
+  <div class="tabbar" id="tabbar">
+    <button class="tab-btn active" data-tab="screen-home" onclick="showScreen('screen-home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>
+      Home
+    </button>
+    <button class="tab-btn" data-tab="screen-warmup-select" onclick="showScreen('screen-warmup-select')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="2"/><path d="M12 7v5l3 3M9 21l3-6 3 6"/></svg>
+      Warm-Up
+    </button>
+    <button class="tab-btn" data-tab="screen-guide" onclick="showScreen('screen-guide')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg>
+      Guide
+    </button>
+    <button class="tab-btn" data-tab="screen-progress" onclick="showScreen('screen-progress')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-4 3 3 5-6"/></svg>
+      Progress
+    </button>
+  </div>
+
+  <!-- ============ REST TIMER OVERLAY ============ -->
+  <div class="timer-overlay" id="timer-overlay">
+    <div class="timer-ring-wrap">
+      <svg viewBox="0 0 260 260">
+        <circle class="timer-ring-bg" cx="130" cy="130" r="115"></circle>
+        <circle class="timer-ring-fg" id="timer-ring-fg" cx="130" cy="130" r="115" stroke-dasharray="722.6" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="timer-center">
+        <div class="tn" id="timer-display">60</div>
+        <div class="tl">Rest</div>
+      </div>
+    </div>
+    <div class="timer-controls">
+      <button onclick="adjustTimer(-15)">−15s</button>
+      <button onclick="adjustTimer(15)">+15s</button>
+      <button class="skip" onclick="skipTimer()">Skip</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA MODEL
+   ============================================================ */
+
+const WARMUPS = {
+  1: { focus: "Lower Focus", steps: [
+    { t: "Hooklying Breathing", m: "6 slow breaths", d: "Inhale through your nose 4 seconds, exhale through your mouth 4 seconds. Expand your midsection 360° on the inhale, gently compress on the exhale." },
+    { t: "90/90 Hip Switch", m: "8 reps/side", d: "Opens the hips and addresses rotation." },
+    { t: "Quadruped Heel Sit T-Spine Rotation", m: "8 reps/side", d: "Improves upper back rotation and shoulder mobility." },
+    { t: "Spiderman Lunge with Rotation", m: "4 reps/side", d: "Integrates hips, spine, and shoulders together." },
+    { t: "Leaning Wall Calf Raises", m: "2×12-15 (or 8-12/side single-leg)", d: "Builds calf strength and ankle mobility. Superset with the core move below." },
+    { t: "Bench Reverse Plank Hip Flexor Raises", m: "2×6/side, 3s hold", d: "Strengthens hip flexors and challenges trunk stability." },
+  ]},
+  2: { focus: "Upper Focus", steps: [
+    { t: "Hooklying Breathing", m: "6 slow breaths", d: "Inhale through your nose 4 seconds, exhale through your mouth 4 seconds. Expand your midsection 360° on the inhale, gently compress on the exhale." },
+    { t: "90/90 Hip Switch", m: "8 reps/side", d: "Opens the hips and addresses rotation." },
+    { t: "Quadruped Heel Sit T-Spine Rotation", m: "8 reps/side", d: "Improves upper back rotation and shoulder mobility." },
+    { t: "Spiderman Lunge with Rotation", m: "4 reps/side", d: "Integrates hips, spine, and shoulders together." },
+    { t: "1DB Seated External Rotation", m: "2×12/side", d: "Targets the rotator cuff and shoulder stabilizers. Superset with the core move below." },
+    { t: "Tall Plank Alternating Shoulder Taps", m: "2×8/side", d: "Challenges trunk strength and shoulder stability." },
+  ]},
+  3: { focus: "Lower Focus", steps: [
+    { t: "Hooklying Breathing", m: "6 slow breaths", d: "Inhale through your nose 4 seconds, exhale through your mouth 4 seconds. Expand your midsection 360° on the inhale, gently compress on the exhale." },
+    { t: "90/90 Hip Switch", m: "8 reps/side", d: "Opens the hips and addresses rotation." },
+    { t: "Quadruped Heel Sit T-Spine Rotation", m: "8 reps/side", d: "Improves upper back rotation and shoulder mobility." },
+    { t: "Spiderman Lunge with Rotation", m: "4 reps/side", d: "Integrates hips, spine, and shoulders together." },
+    { t: "Side Lying Hip Adduction", m: "2×12-15/side", d: "Addresses adductor strength — add an ankle weight for more challenge. Superset with the core move below." },
+    { t: "Side Plank with Twist", m: "2×8-10/side", d: "Targets core stability and rotation." },
+  ]},
+  4: { focus: "Upper Focus", steps: [
+    { t: "Hooklying Breathing", m: "6 slow breaths", d: "Inhale through your nose 4 seconds, exhale through your mouth 4 seconds. Expand your midsection 360° on the inhale, gently compress on the exhale." },
+    { t: "90/90 Hip Switch", m: "8 reps/side", d: "Opens the hips and addresses rotation." },
+    { t: "Quadruped Heel Sit T-Spine Rotation", m: "8 reps/side", d: "Improves upper back rotation and shoulder mobility." },
+    { t: "Spiderman Lunge with Rotation", m: "4 reps/side", d: "Integrates hips, spine, and shoulders together." },
+    { t: "Seated Wall Slide", m: "2×12-15 (or 8-12/side)", d: "Builds calf strength and ankle mobility. Superset with the core move below." },
+    { t: "Suitcase Carry", m: "2×20-30s/side", d: "Targets core stability and grip strength." },
+  ]},
+};
+
+// Each "exercise" has: name, options[{label,detail}], sets: [{f1,f2,...}], setFields (labels for inputs), rest (seconds)
+function ex(name, tag, options, reps, sets, rest, note){
+  return { name, tag, options, reps, sets, rest, note };
+}
+
+const PLANS = {
+  total: {
+    title: "3-Day Total Body",
+    eyebrow: "TOTAL BODY BLUEPRINT",
+    days: [
+      { id:"t1", label:"Day 1", name:"Squat Focus", sub:"Lower body emphasis", warmup:1, blocks:[
+        { label:"A · Power Development", exercises:[
+          ex("Box Jumps / Squat Jumps","Power",["Box Jumps","Squat Jumps (no box)"],"5 reps",3,30,"Explosive — reset between reps."),
+        ]},
+        { label:"B1 · Squat Variations ↔ B2 · Rear Delts (superset)", exercises:[
+          ex("Barbell Back Squat / DB Goblet Squat","Squat",["Barbell Back Squat","Dumbbell Goblet Squat"],"8 reps @ 6-7 RPE",4,90,"High or low bar. Superset with B2."),
+          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",["2DB Bent Over Reverse Flye","Cable Rear Delt Crossover Flye"],"10 reps @ 8 RPE",3,90,"Rest 60-120s, then return to B1."),
+        ]},
+        { label:"C1 · Single-Leg Knee Dominant ↔ C2 · Pushing (superset)", exercises:[
+          ex("Goblet Reverse Lunge / Deficit Reverse Lunge","Single-Leg",["Goblet Reverse Lunge","Goblet Deficit Reverse Lunge (2-4\" elevation)"],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("2DB Alt. Incline Bench Press / Seesaw OH Press","Pushing",["2DB Alternating Incline Bench Press","2DB Seated Seesaw Overhead Press"],"8 reps/side @ 7-8 RPE",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Hamstrings ↔ D2 · Core Flexion (superset)", exercises:[
+          ex("Stability Ball Hamstring Curl Series","Hamstrings",null,"10-12 reps @ 8-9 RPE",3,90,"Superset with D2."),
+          ex("Tuck Up Series","Core",null,"8-10 reps @ 8-9 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — 4 rounds", exercises:[
+          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,30,"Then Tall Plank KB/DB Drag 30s, then rest 30s. Repeat 4 rounds total."),
+        ]},
+      ]},
+      { id:"t2", label:"Day 2", name:"Bench Press Focus", sub:"Upper push & pull", warmup:2, blocks:[
+        { label:"A · Power", exercises:[
+          ex("Plyo Pushup","Power",null,"5 reps",3,50,"Explosive off the ground."),
+        ]},
+        { label:"B1 · Bench Press ↔ B2 · Single-Leg Hip Dominant (superset)", exercises:[
+          ex("Barbell Bench Press / 2DB Bench Press","Bench",["Barbell Bench Press","2DB Bench Press"],"8 reps @ 6-7 RPE",4,60,"Superset with B2."),
+          ex("1DB RFE SL Deadlift / Staggered Stance RDL","Single-Leg",["1DB Suitcase RFE SL Deadlift","1DB Suitcase Staggered Stance RDL"],"8 reps/side @ 7-8 RPE",3,60,"Return to B1."),
+        ]},
+        { label:"C1 · Overhead Press ↔ C2 · Row (superset)", exercises:[
+          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",["1/2 Kneeling Single Arm Overhead Press","Standing Single Arm DB Overhead Press"],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
+          ex("DB 3-Point Row","Row",null,"10 reps/side @ 7 RPE",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Delts ↔ D2 · Arms (superset)", exercises:[
+          ex("2DB Lateral Raise","Delts",null,"12 reps @ 8-9 RPE",3,60,"Superset with D2."),
+          ex("2DB Seated Biceps Curl","Arms",null,"12 reps @ 8-9 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — cardio ladder", exercises:[
+          ex("Cardio Ladder (run/row/bike/jump rope)","Finisher",null,"30s @ RPE6, 20s @ RPE8, 10s @ RPE10",4,45,"3-4 rounds, 30-60s rest between."),
+        ]},
+      ]},
+      { id:"t3", label:"Day 3", name:"Deadlift Focus", sub:"Balanced emphasis", warmup:3, blocks:[
+        { label:"A · Power", exercises:[
+          ex("Kettlebell Swing / Broad Jumps","Power",["Kettlebell Swing","Broad Jumps"],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
+        ]},
+        { label:"B1 · Deadlift ↔ B2 · Pushup (superset)", exercises:[
+          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",["Barbell Deadlift","Trap Bar or Kettlebell Deadlift"],"5 reps @ 7 RPE",4,90,"Superset with B2."),
+          ex("Pushup Series","Pushup",null,"8 reps (pick your variation)",4,60,"Return to B1."),
+        ]},
+        { label:"C1 · Multi-Planar ↔ C2 · Pulling (superset)", exercises:[
+          ex("Goblet Lateral Lunge","Multi-Planar",null,"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",["Band Assisted Pull Up (AMRAP)","Pull Up (AMRAP)","Lat Pulldown Machine (10 @ 8 RPE)"],"AMRAP or 10 reps",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Quads ↔ D2 · Anti-Rotation (superset)", exercises:[
+          ex("Goblet Cyclist Squat","Quads",null,"15 reps @ 6-7 RPE",3,90,"Superset with D2."),
+          ex("Standing Band/Cable Anti-Rotation Press","Core",null,"10 reps/side @ 7-8 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — KB/DB Chain", exercises:[
+          ex("KB/DB Chain: Clean → Push Press → OH Reverse Lunge → Squat → Swing","Finisher",null,"3 reps unbroken per side = 1 set",3,60,"3 total sets, 60s rest between."),
+        ]},
+      ]},
+    ]
+  },
+  upperlower: {
+    title: "4-Day Upper/Lower",
+    eyebrow: "UPPER / LOWER BLUEPRINT",
+    days: [
+      { id:"u1", label:"Day 1", name:"Lower Body", sub:"Squat pattern", warmup:1, blocks:[
+        { label:"A · Power", exercises:[
+          ex("Box Jumps / Squat Jumps","Power",["Box Jumps","Squat Jumps (no box)"],"5 reps",3,30,"Explosive — reset between reps."),
+        ]},
+        { label:"B1 · Squat ↔ B2 · Abductors (superset)", exercises:[
+          ex("Barbell Back Squat / DB Goblet Squat","Squat",["Barbell Back Squat","Dumbbell Goblet Squat"],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
+          ex("Copenhagen Plank (Short/Long Lever)","Abductors",["Short Lever","Long Lever (more stress)"],"15-30s/side @ 7-8 RPE",3,90,"Return to B1."),
+        ]},
+        { label:"C1 · Single-Leg Knee Dominant ↔ C2 · Hinge (superset)", exercises:[
+          ex("2DB RFE Split Squat / 2DB Split Squat","Single-Leg",["2DB Rear Foot Elevated Split Squat","2DB Split Squat"],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("BB Hip Thrust / BB Romanian Deadlift","Hinge",["BB Hip Thrust","BB Romanian Deadlift"],"10 or 8 reps @ 8 RPE",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Hamstrings ↔ D2 · Core Flexion (superset)", exercises:[
+          ex("Stability Ball Hamstring Curl Series","Hamstrings",null,"10-12 reps @ 8-9 RPE",3,60,"Superset with D2."),
+          ex("Tuck Up Series","Core",null,"8-10 reps @ 8-9 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — 4 rounds", exercises:[
+          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,30,"Then Tall Plank KB/DB Drag 30s, then rest 30s."),
+        ]},
+      ]},
+      { id:"u2", label:"Day 2", name:"Upper Body", sub:"Bench pattern", warmup:2, blocks:[
+        { label:"A · Power", exercises:[
+          ex("Plyo Pushup","Power",null,"5 reps",3,50,"Explosive off the ground."),
+        ]},
+        { label:"B1 · Bench Press ↔ B2 · Rear Delts (superset)", exercises:[
+          ex("Barbell Bench Press / 2DB Bench Press","Bench",["Barbell Bench Press","2DB Bench Press"],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
+          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",["2DB Bent Over Reverse Flye","Cable Rear Delt Crossover Flye"],"10 reps @ 8 RPE",3,90,"Return to B1."),
+        ]},
+        { label:"C1 · Overhead Press ↔ C2 · Row (superset)", exercises:[
+          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",["1/2 Kneeling Single Arm Overhead Press","Standing Single Arm DB Overhead Press"],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
+          ex("DB 3-Point Row","Row",null,"10 reps/side @ 7 RPE",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Delts ↔ D2 · Arms (superset)", exercises:[
+          ex("2DB Lateral Raise","Delts",null,"12 reps @ 8-9 RPE",3,60,"Superset with D2."),
+          ex("2DB Seated Biceps Curl","Arms",null,"12 reps @ 8-9 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — cardio ladder", exercises:[
+          ex("Cardio Ladder (run/row/bike/jump rope)","Finisher",null,"30s @ RPE6, 20s @ RPE8, 10s @ RPE10",4,45,"3-4 rounds, 30-60s rest between."),
+        ]},
+      ]},
+      { id:"u3", label:"Day 3", name:"Lower Body", sub:"Deadlift pattern", warmup:3, blocks:[
+        { label:"A · Power", exercises:[
+          ex("Kettlebell Swing / Broad Jumps","Power",["Kettlebell Swing","Broad Jumps"],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
+        ]},
+        { label:"B1 · Deadlift ↔ B2 · Calves (superset)", exercises:[
+          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",["Barbell Deadlift","Trap Bar or Kettlebell Deadlift"],"5 reps @ 7 RPE",4,90,"Superset with B2."),
+          ex("Single Leg Calf Raise off Plate (± weighted)","Calves",["Bodyweight","Weighted"],"10-12 reps/side @ 8-9 RPE",3,60,"Return to B1."),
+        ]},
+        { label:"C1 · Multi-Planar ↔ C2 · Hinge (superset)", exercises:[
+          ex("Goblet Lateral Lunge","Multi-Planar",null,"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("2DB Romanian Deadlift / 2DB Single Leg Deadlift","Hinge",["2DB Romanian Deadlift (10 reps)","2DB Single Leg Deadlift (8 reps/side — double volume)"],"10 reps or 8/side @ 8 RPE",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Quads ↔ D2 · Anti-Rotation (superset)", exercises:[
+          ex("Goblet Cyclist Squat","Quads",null,"15 reps @ 6-7 RPE",3,60,"Superset with D2."),
+          ex("Standing Band/Cable Anti-Rotation Press","Core",null,"10 reps/side @ 7-8 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — KB/DB Chain", exercises:[
+          ex("KB/DB Chain: Clean → Push Press → OH Reverse Lunge → Squat → Swing","Finisher",null,"3 reps unbroken per side = 1 set",3,60,"3 total sets, 60s rest between."),
+        ]},
+      ]},
+      { id:"u4", label:"Day 4", name:"Upper Body", sub:"Pull pattern", warmup:4, blocks:[
+        { label:"A · Power", exercises:[
+          ex("Single Arm DB Push Press / Medicine Ball Slam","Power",["Single Arm DB Push Press","Medicine Ball Floor Slam"],"5 reps/side or 8 reps @ 5-6 RPE",3,45,"Light and powerful."),
+        ]},
+        { label:"B1 · Pulling ↔ B2 · Pressing (superset)", exercises:[
+          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",["Band Assisted Pull Up (AMRAP)","Pull Up (AMRAP)","Lat Pulldown Machine (10 @ 8 RPE)"],"AMRAP or 10 reps",4,90,"Superset with B2."),
+          ex("2DB Incline Bench Press","Pressing",null,"8 reps @ 7-8 RPE",4,60,"Return to B1."),
+        ]},
+        { label:"C1 · Hinge (Row) ↔ C2 · Pushup (superset)", exercises:[
+          ex("Seated Cable Row / 2DB Bent Over Row","Row",["Seated Cable Row (12 @ 8-9 RPE)","2DB Bent Over Row (10 @ 8 RPE)"],"10-12 reps",3,60,"Superset with C2."),
+          ex("Pushup Series","Pushup",null,"8 reps (pick your variation)",3,60,"Return to C1."),
+        ]},
+        { label:"D1 · Delts ↔ D2 · Triceps (superset)", exercises:[
+          ex("2DB Front Raise","Delts",null,"12 reps @ 8-9 RPE",3,60,"Superset with D2."),
+          ex("2DB Lying Triceps Ext. / Band Low OH Triceps Ext.","Triceps",["2DB Lying Triceps Extensions","Band/Cable Low Overhead Triceps Extension"],"12 reps @ 8-9 RPE",3,60,"Return to D1."),
+        ]},
+        { label:"E · Finisher — 4 rounds", exercises:[
+          ex("2KB/2DB Thruster","Finisher",null,"20 seconds",4,20,"Then Front Plank 20s, then rest 20s. Repeat 4 rounds."),
+        ]},
+      ]},
+    ]
+  }
+};
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let state = {
+  currentPlan: null,
+  currentDay: null,
+  blockIndex: 0,
+  optionChoice: {}, // exId -> option index
+  setLog: {},       // exId -> [{weight, reps, checked}]
+  history: JSON.parse(localStorage.getItem('mb_history') || '[]'),
+};
+
+function saveHistory(){ localStorage.setItem('mb_history', JSON.stringify(state.history)); }
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab === id);
+  });
+  window.scrollTo(0,0);
+  const scr = document.getElementById(id);
+  if(scr) scr.scrollTop = 0;
+}
+
+function openPlan(key){
+  state.currentPlan = key;
+  const plan = PLANS[key];
+  document.getElementById('daylist-eyebrow').textContent = plan.eyebrow;
+  document.getElementById('daylist-title').textContent = plan.title;
+  const wrap = document.getElementById('daylist-items');
+  wrap.innerHTML = '';
+  plan.days.forEach((day, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'day-card';
+    btn.onclick = () => startWorkout(key, i);
+    btn.innerHTML = `
+      <div class="tag">${i+1}</div>
+      <div class="info">
+        <div class="t">${day.label} — ${day.name}</div>
+        <div class="d">${day.sub} · ${day.blocks.length} blocks</div>
+      </div>
+      <div class="chev">›</div>
+    `;
+    wrap.appendChild(btn);
+  });
+  showScreen('screen-daylist');
+}
+
+/* ============================================================
+   WARM-UP SCREENS
+   ============================================================ */
+function renderWarmupSelect(){
+  const wrap = document.getElementById('warmup-day-list');
+  wrap.innerHTML = '';
+  [1,2,3,4].forEach(n => {
+    const w = WARMUPS[n];
+    const btn = document.createElement('button');
+    btn.className = 'day-card';
+    btn.onclick = () => openWarmupDetail(n);
+    btn.innerHTML = `
+      <div class="tag">${n}</div>
+      <div class="info">
+        <div class="t">Day ${n} Warm-Up</div>
+        <div class="d">${w.focus} · 6 steps</div>
+      </div>
+      <div class="chev">›</div>
+    `;
+    wrap.appendChild(btn);
+  });
+}
+
+function openWarmupDetail(n){
+  const w = WARMUPS[n];
+  document.getElementById('warmup-detail-eyebrow').textContent = `DAY ${n} · ${w.focus.toUpperCase()}`;
+  const wrap = document.getElementById('warmup-detail-steps');
+  wrap.innerHTML = '';
+  w.steps.forEach((s, i) => {
+    const row = document.createElement('div');
+    row.className = 'warmup-step';
+    row.innerHTML = `
+      <div class="wstep-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="wstep-body">
+        <div class="t">${s.t}</div>
+        <div class="m">${s.m}</div>
+        <div class="d">${s.d}</div>
+      </div>
+      <button class="wstep-check" onclick="this.classList.toggle('checked')"></button>
+    `;
+    wrap.appendChild(row);
+  });
+  showScreen('screen-warmup-detail');
+}
+
+/* ============================================================
+   WORKOUT FLOW
+   ============================================================ */
+function exId(dayId, blockIdx, exIdx){ return `${dayId}_b${blockIdx}_e${exIdx}`; }
+
+function startWorkout(planKey, dayIdx){
+  state.currentPlan = planKey;
+  state.currentDay = dayIdx;
+  state.blockIndex = 0;
+  const day = PLANS[planKey].days[dayIdx];
+  // init set logs
+  day.blocks.forEach((block, bi) => {
+    block.exercises.forEach((exc, ei) => {
+      const id = exId(day.id, bi, ei);
+      if(!state.setLog[id]){
+        state.setLog[id] = Array.from({length: exc.sets}, () => ({weight:'', reps:'', rpe:'', checked:false}));
+      }
+    });
+  });
+  renderBlock();
+  showScreen('screen-workout');
+}
+
+function currentDayObj(){
+  return PLANS[state.currentPlan].days[state.currentDay];
+}
+
+function renderBlock(){
+  const day = currentDayObj();
+  const block = day.blocks[state.blockIndex];
+  const totalBlocks = day.blocks.length;
+
+  document.getElementById('workout-block-count').textContent = `${day.label} · Block ${state.blockIndex+1}/${totalBlocks}`;
+
+  // progress track
+  const track = document.getElementById('workout-progress');
+  track.innerHTML = '';
+  day.blocks.forEach((b, i) => {
+    const seg = document.createElement('div');
+    seg.className = 'seg' + (i < state.blockIndex ? ' done' : i === state.blockIndex ? ' current' : '');
+    track.appendChild(seg);
+  });
+
+  const content = document.getElementById('workout-block-content');
+  content.innerHTML = '';
+
+  const labelEl = document.createElement('div');
+  labelEl.className = 'block-label';
+  labelEl.textContent = block.label;
+  content.appendChild(labelEl);
+
+  block.exercises.forEach((exc, ei) => {
+    const id = exId(day.id, state.blockIndex, ei);
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+
+    let optHtml = '';
+    if(exc.options){
+      const chosen = state.optionChoice[id] || 0;
+      optHtml = `<div class="option-toggle">` + exc.options.map((o,oi)=>
+        `<button class="${oi===chosen?'active':''}" onclick="chooseOption('${id}',${oi})">${o.split('(')[0].trim()}</button>`
+      ).join('') + `</div>`;
+    }
+
+    const setsWrap = document.createElement('div');
+    setsWrap.className = 'set-rows';
+    const log = state.setLog[id];
+    log.forEach((row, si) => {
+      const setRow = document.createElement('div');
+      setRow.className = 'set-row';
+      setRow.innerHTML = `
+        <div class="set-idx">#${si+1}</div>
+        <div class="fld"><span class="lbl">WT</span><input type="number" inputmode="decimal" value="${row.weight}" placeholder="—" onchange="updateSet('${id}',${si},'weight',this.value)"></div>
+        <div class="fld"><span class="lbl">REPS</span><input type="number" inputmode="numeric" value="${row.reps}" placeholder="—" onchange="updateSet('${id}',${si},'reps',this.value)"></div>
+        <div class="fld"><span class="lbl">RPE</span><input type="number" inputmode="numeric" value="${row.rpe}" placeholder="—" min="1" max="10" onchange="updateSet('${id}',${si},'rpe',this.value)"></div>
+        <button class="check ${row.checked?'checked':''}" onclick="toggleSet('${id}',${si})">✓</button>
+      `;
+      setsWrap.appendChild(setRow);
+    });
+
+    card.innerHTML = `
+      <div class="ex-name">${exc.name}</div>
+      <div class="ex-meta">${exc.reps}</div>
+      ${optHtml}
+      <div class="ex-note">${exc.note}</div>
+    `;
+    card.appendChild(setsWrap);
+
+    const restBtn = document.createElement('button');
+    restBtn.className = 'rest-btn';
+    restBtn.textContent = `Start Rest Timer · ${exc.rest}s`;
+    restBtn.onclick = () => startTimer(exc.rest);
+    card.appendChild(restBtn);
+
+    content.appendChild(card);
+  });
+
+  // nav buttons
+  document.getElementById('workout-prev').style.visibility = state.blockIndex === 0 ? 'hidden' : 'visible';
+  document.getElementById('workout-next').textContent = state.blockIndex === totalBlocks-1 ? 'Finish Session' : 'Next Block';
+}
+
+function chooseOption(id, idx){
+  state.optionChoice[id] = idx;
+  renderBlock();
+}
+function updateSet(id, idx, field, val){
+  state.setLog[id][idx][field] = val;
+}
+function toggleSet(id, idx){
+  state.setLog[id][idx].checked = !state.setLog[id][idx].checked;
+  renderBlock();
+  showToast('Set logged');
+}
+
+function nextBlock(){
+  const day = currentDayObj();
+  if(state.blockIndex < day.blocks.length - 1){
+    state.blockIndex++;
+    renderBlock();
+    document.getElementById('screen-workout').scrollTop = 0;
+  } else {
+    finishWorkout();
+  }
+}
+function prevBlock(){
+  if(state.blockIndex > 0){
+    state.blockIndex--;
+    renderBlock();
+  }
+}
+function exitWorkout(){
+  showScreen('screen-daylist');
+}
+
+function finishWorkout(){
+  const day = currentDayObj();
+  let totalSets = 0, doneSets = 0;
+  day.blocks.forEach((b,bi)=>b.exercises.forEach((e,ei)=>{
+    const log = state.setLog[exId(day.id,bi,ei)];
+    totalSets += log.length;
+    doneSets += log.filter(s=>s.checked).length;
+  }));
+  state.history.unshift({
+    date: new Date().toISOString(),
+    plan: PLANS[state.currentPlan].title,
+    day: `${day.label} — ${day.name}`,
+    doneSets, totalSets
+  });
+  saveHistory();
+  document.getElementById('complete-summary').textContent = `${day.name} complete. ${doneSets}/${totalSets} sets logged. Recovery starts now.`;
+  showScreen('screen-complete');
+}
+
+/* ============================================================
+   PROGRESS
+   ============================================================ */
+function renderProgress(){
+  const wrap = document.getElementById('progress-list');
+  wrap.innerHTML = '';
+  if(state.history.length === 0){
+    wrap.innerHTML = `<div class="info-box">No sessions logged yet. Finish a workout and it'll show up here.</div>`;
+    return;
+  }
+  state.history.forEach(h => {
+    const d = new Date(h.date);
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.style.cursor = 'default';
+    card.innerHTML = `
+      <div class="tag" style="font-size:14px;">${d.getDate()}</div>
+      <div class="info">
+        <div class="t">${h.day}</div>
+        <div class="d">${h.plan} · ${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
+      </div>
+      <div class="status">${h.doneSets}/${h.totalSets} sets</div>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+/* ============================================================
+   REST TIMER
+   ============================================================ */
+let timerInterval = null;
+let timerRemaining = 60;
+let timerTotal = 60;
+const RING_CIRC = 2 * Math.PI * 115;
+
+function startTimer(seconds){
+  timerTotal = seconds;
+  timerRemaining = seconds;
+  document.getElementById('timer-ring-fg').style.strokeDasharray = RING_CIRC;
+  document.getElementById('timer-overlay').classList.add('active');
+  updateTimerDisplay();
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(tick, 1000);
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+function tick(){
+  timerRemaining--;
+  if(timerRemaining <= 0){
+    clearInterval(timerInterval);
+    timerRemaining = 0;
+    if(navigator.vibrate) navigator.vibrate([80,60,80]);
+    updateTimerDisplay();
+    setTimeout(()=>{ document.getElementById('timer-overlay').classList.remove('active'); }, 700);
+    return;
+  }
+  updateTimerDisplay();
+}
+function updateTimerDisplay(){
+  document.getElementById('timer-display').textContent = timerRemaining;
+  const frac = Math.max(0, timerRemaining / timerTotal);
+  const offset = RING_CIRC * (1 - frac);
+  document.getElementById('timer-ring-fg').style.strokeDashoffset = offset;
+}
+function adjustTimer(delta){
+  timerRemaining = Math.max(0, timerRemaining + delta);
+  timerTotal = Math.max(timerTotal, timerRemaining);
+  updateTimerDisplay();
+}
+function skipTimer(){
+  clearInterval(timerInterval);
+  document.getElementById('timer-overlay').classList.remove('active');
+}
+
+/* ============================================================
+   RPE DIAL (guide screen)
+   ============================================================ */
+function initRpeDial(){
+  const dial = document.getElementById('guide-rpe-dial');
+  const knob = document.getElementById('guide-rpe-knob');
+  const num = document.getElementById('guide-rpe-num');
+  const radius = 84;
+  let dragging = false;
+
+  function setFromAngle(deg){
+    // deg: 0 = top, clockwise
+    let val = Math.round(1 + (deg/360)*9);
+    val = Math.max(1, Math.min(10, val));
+    num.textContent = val;
+    const rad = (deg - 90) * Math.PI/180;
+    const kx = 105 + radius*Math.cos(rad);
+    const ky = 105 + radius*Math.sin(rad);
+    knob.style.left = (kx-15)+'px';
+    knob.style.top = (ky-15)+'px';
+  }
+
+  function handle(e){
+    const rect = dial.getBoundingClientRect();
+    const cx = rect.left + rect.width/2;
+    const cy = rect.top + rect.height/2;
+    const point = e.touches ? e.touches[0] : e;
+    const dx = point.clientX - cx;
+    const dy = point.clientY - cy;
+    let deg = Math.atan2(dy, dx) * 180/Math.PI + 90;
+    if(deg < 0) deg += 360;
+    setFromAngle(deg);
+  }
+
+  dial.addEventListener('mousedown', e=>{dragging=true; handle(e);});
+  window.addEventListener('mousemove', e=>{if(dragging) handle(e);});
+  window.addEventListener('mouseup', ()=>dragging=false);
+  dial.addEventListener('touchstart', e=>{dragging=true; handle(e);});
+  dial.addEventListener('touchmove', e=>{if(dragging){handle(e); e.preventDefault();}}, {passive:false});
+  window.addEventListener('touchend', ()=>dragging=false);
+
+  setFromAngle(216); // default ~7
+}
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimeout;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init(){
+  renderWarmupSelect();
+  renderProgress();
+  initRpeDial();
+
+  // Refresh progress each time tab opened
+  document.querySelector('[data-tab="screen-progress"]').addEventListener('click', renderProgress);
+}
+init();
+
+/* ============================================================
+   PWA: manifest + service worker (inline, no external files needed)
+   ============================================================ */
+const ICON_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#141414"/>
+  <g transform="translate(96,140)">
+    <rect x="0" y="140" width="46" height="120" rx="8" fill="#3B6FF0"/>
+    <rect x="66" y="90" width="46" height="170" rx="8" fill="#3B6FF0"/>
+    <rect x="132" y="30" width="46" height="230" rx="8" fill="#3B6FF0"/>
+    <rect x="198" y="0" width="46" height="260" rx="8" fill="#F5F3EE"/>
+  </g>
+</svg>`.trim();
+
+function svgToDataUrl(svg){
+  return 'data:image/svg+xml;base64,' + btoa(svg);
+}
+
+const iconUrl = svgToDataUrl(ICON_SVG);
+document.getElementById('apple-icon').href = iconUrl;
+
+const manifest = {
+  name: "Motion Blueprint",
+  short_name: "Motion",
+  start_url: "./",
+  scope: "./",
+  display: "standalone",
+  background_color: "#141414",
+  theme_color: "#141414",
+  orientation: "portrait",
+  icons: [
+    { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
+  ]
+};
+const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
+document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
+
+// Service worker for offline support
+const SW_CODE = `
+const CACHE = 'motion-blueprint-v1';
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.add(self.registration.scope)));
+});
+self.addEventListener('activate', e => { self.clients.claim(); });
+self.addEventListener('fetch', e => {
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        return caches.open(CACHE).then(c => { c.put(e.request, res.clone()); return res; });
+      }).catch(() => cached);
+    })
+  );
+});
+`;
+if('serviceWorker' in navigator){
+  const swBlob = new Blob([SW_CODE], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{ /* offline caching best-effort */ });
+}
+</script>
+</body>
+</html>
