@@ -238,6 +238,105 @@
     font-weight: 700;
   }
 
+  /* ---------- Progress session cards (editable/deletable) ---------- */
+  .session-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .session-main {
+    padding: 16px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .session-main .tag {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 14px;
+    color: var(--blue);
+    background: rgba(59,111,240,0.12);
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .session-main .info { flex: 1; min-width: 0; }
+  .session-main .info .t { font-size: 15.5px; font-weight: 700; }
+  .session-main .info .d { font-size: 12.5px; color: var(--ink-dim); margin-top: 2px; }
+  .session-main .info .note { font-size: 12px; color: var(--ink-faint); margin-top: 4px; font-style: italic; }
+  .session-main .status { font-size: 11px; color: var(--green); font-weight: 700; white-space: nowrap; }
+  .session-toggle {
+    background: none; border: none;
+    color: var(--ink-faint);
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .session-toggle svg { width: 18px; height: 18px; transition: transform 0.2s ease; }
+  .session-toggle.open svg { transform: rotate(180deg); }
+
+  .session-actions {
+    display: none;
+    border-top: 1px solid var(--line);
+    padding: 12px 18px 16px 18px;
+  }
+  .session-actions.open { display: block; }
+
+  .session-field { margin-bottom: 12px; }
+  .session-field label {
+    display: block;
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .session-field input, .session-field textarea {
+    width: 100%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 14px;
+    padding: 10px 12px;
+    font-family: inherit;
+  }
+  .session-field textarea { resize: none; min-height: 60px; }
+  .session-field-row { display: flex; gap: 10px; }
+  .session-field-row .session-field { flex: 1; }
+
+  .session-btn-row { display: flex; gap: 10px; margin-top: 4px; }
+  .session-btn-row button {
+    flex: 1;
+    border: none;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+  .session-btn-save { background: var(--blue); color: #fff; }
+  .session-btn-save:active { background: var(--blue-dim); }
+  .session-btn-delete { background: rgba(227,91,91,0.12); color: #e35b5b; }
+  .session-btn-delete:active { background: rgba(227,91,91,0.22); }
+
+  .delete-confirm {
+    display: none;
+    border-top: 1px solid var(--line);
+    padding: 14px 18px;
+    background: rgba(227,91,91,0.06);
+  }
+  .delete-confirm.open { display: flex; align-items: center; gap: 10px; }
+  .delete-confirm p { flex: 1; font-size: 12.5px; color: var(--ink-dim); margin: 0; line-height: 1.4; }
+  .delete-confirm button {
+    border: none; padding: 10px 14px; border-radius: 9px;
+    font-size: 12.5px; font-weight: 700; white-space: nowrap;
+  }
+  .delete-confirm .confirm-yes { background: #e35b5b; color: #fff; }
+  .delete-confirm .confirm-no { background: var(--bg-elevated); color: var(--ink-dim); }
+
   /* ---------- Workout flow ---------- */
   .progress-track {
     display: flex; gap: 5px;
@@ -1448,10 +1547,12 @@ function finishWorkout(){
     doneSets += log.filter(s=>s.checked).length;
   }));
   state.history.unshift({
+    id: `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
     date: new Date().toISOString(),
     plan: PLANS[state.currentPlan].title,
     day: `${day.label} — ${day.name}`,
-    doneSets, totalSets
+    doneSets, totalSets,
+    note: ''
   });
   saveHistory();
   document.getElementById('complete-summary').textContent = `${day.name} complete. ${doneSets}/${totalSets} sets logged. Recovery starts now.`;
@@ -1459,8 +1560,10 @@ function finishWorkout(){
 }
 
 /* ============================================================
-   PROGRESS
+   PROGRESS — editable and deletable session log
    ============================================================ */
+let openSessionId = null; // tracks which card's action panel is expanded
+
 function renderProgress(){
   const wrap = document.getElementById('progress-list');
   wrap.innerHTML = '';
@@ -1469,20 +1572,106 @@ function renderProgress(){
     return;
   }
   state.history.forEach(h => {
+    // Backfill an id/note for any session logged before this feature existed.
+    if(!h.id) h.id = `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    if(h.note === undefined) h.note = '';
+
     const d = new Date(h.date);
+    const isOpen = openSessionId === h.id;
+
     const card = document.createElement('div');
-    card.className = 'day-card';
-    card.style.cursor = 'default';
+    card.className = 'session-card';
+
+    const dateForInput = d.toISOString().slice(0,10); // yyyy-mm-dd for <input type="date">
+
     card.innerHTML = `
-      <div class="tag" style="font-size:14px;">${d.getDate()}</div>
-      <div class="info">
-        <div class="t">${h.day}</div>
-        <div class="d">${h.plan} · ${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}</div>
+      <div class="session-main">
+        <div class="tag">${d.getDate()}</div>
+        <div class="info">
+          <div class="t">${h.day}</div>
+          <div class="d">${h.plan} · ${d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</div>
+          ${h.note ? `<div class="note">"${h.note}"</div>` : ''}
+        </div>
+        <div class="status">${h.doneSets}/${h.totalSets} sets</div>
+        <button class="session-toggle ${isOpen?'open':''}" onclick="toggleSessionEditor('${h.id}')" aria-label="Edit session">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
       </div>
-      <div class="status">${h.doneSets}/${h.totalSets} sets</div>
+      <div class="session-actions ${isOpen?'open':''}" id="actions_${h.id}">
+        <div class="session-field-row">
+          <div class="session-field">
+            <label>Date</label>
+            <input type="date" id="date_${h.id}" value="${dateForInput}">
+          </div>
+          <div class="session-field">
+            <label>Sets done</label>
+            <input type="number" id="done_${h.id}" value="${h.doneSets}" min="0" max="${h.totalSets}">
+          </div>
+        </div>
+        <div class="session-field">
+          <label>Notes</label>
+          <textarea id="note_${h.id}" placeholder="How did it feel? Any weights to remember?">${h.note}</textarea>
+        </div>
+        <div class="session-btn-row">
+          <button class="session-btn-save" onclick="saveSessionEdit('${h.id}')">Save changes</button>
+          <button class="session-btn-delete" onclick="showDeleteConfirm('${h.id}')">Delete</button>
+        </div>
+      </div>
+      <div class="delete-confirm" id="confirm_${h.id}">
+        <p>Delete this session? This can't be undone.</p>
+        <button class="confirm-no" onclick="hideDeleteConfirm('${h.id}')">Cancel</button>
+        <button class="confirm-yes" onclick="deleteSession('${h.id}')">Delete</button>
+      </div>
     `;
     wrap.appendChild(card);
   });
+}
+
+function toggleSessionEditor(id){
+  openSessionId = (openSessionId === id) ? null : id;
+  renderProgress();
+}
+
+function saveSessionEdit(id){
+  const entry = state.history.find(h => h.id === id);
+  if(!entry) return;
+
+  const dateInput = document.getElementById(`date_${id}`).value;
+  const doneInput = parseInt(document.getElementById(`done_${id}`).value, 10);
+  const noteInput = document.getElementById(`note_${id}`).value.trim();
+
+  if(dateInput){
+    // Preserve original time-of-day, just change the calendar date.
+    const original = new Date(entry.date);
+    const [y,m,dd] = dateInput.split('-').map(Number);
+    original.setFullYear(y, m-1, dd);
+    entry.date = original.toISOString();
+  }
+  if(!isNaN(doneInput)){
+    entry.doneSets = Math.max(0, Math.min(doneInput, entry.totalSets));
+  }
+  entry.note = noteInput;
+
+  saveHistory();
+  openSessionId = null;
+  renderProgress();
+  showToast('Session updated');
+}
+
+function showDeleteConfirm(id){
+  const el = document.getElementById(`confirm_${id}`);
+  if(el) el.classList.add('open');
+}
+function hideDeleteConfirm(id){
+  const el = document.getElementById(`confirm_${id}`);
+  if(el) el.classList.remove('open');
+}
+function deleteSession(id){
+  state.history = state.history.filter(h => h.id !== id);
+  saveHistory();
+  if(openSessionId === id) openSessionId = null;
+  renderProgress();
+  showToast('Session deleted');
 }
 
 /* ============================================================
