@@ -361,6 +361,54 @@
   .delete-confirm .confirm-yes { background: #e35b5b; color: #fff; }
   .delete-confirm .confirm-no { background: var(--bg-elevated); color: var(--ink-dim); }
 
+  /* ---------- Logged exercise detail (inside expanded session card) ---------- */
+  .session-log-block { margin-bottom: 16px; }
+  .session-log-block-label {
+    font-size: 11px;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .session-log-ex {
+    background: var(--bg-elevated);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .session-log-ex-name {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .session-log-set-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    padding: 4px 0;
+  }
+  .session-log-set-row .set-num { width: 20px; color: var(--ink-faint); font-weight: 700; flex-shrink: 0; }
+  .session-log-set-row .field { min-width: 52px; }
+  .session-log-set-row .field b { color: var(--ink); font-weight: 600; }
+  .session-log-set-row .done-icon {
+    margin-left: auto;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+  }
+  .session-log-set-row .done-icon.done { background: var(--green); color: #12261a; }
+  .session-log-set-row .done-icon.not-done { background: var(--line); color: var(--ink-faint); }
+  .session-log-empty-note {
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+
   /* ---------- Workout flow ---------- */
   .progress-track {
     display: flex; gap: 5px;
@@ -1565,18 +1613,41 @@ function exitWorkout(){
 function finishWorkout(){
   const day = currentDayObj();
   let totalSets = 0, doneSets = 0;
-  day.blocks.forEach((b,bi)=>b.exercises.forEach((e,ei)=>{
-    const log = state.setLog[exId(day.id,bi,ei)];
-    totalSets += log.length;
-    doneSets += log.filter(s=>s.checked).length;
-  }));
+  const exerciseDetails = [];
+
+  day.blocks.forEach((block, bi) => {
+    block.exercises.forEach((exc, ei) => {
+      const id = exId(day.id, bi, ei);
+      const log = state.setLog[id];
+      totalSets += log.length;
+      doneSets += log.filter(s => s.checked).length;
+
+      // Record which option was selected (e.g. "Squat Jumps" vs "Box Jumps")
+      // so the saved history reflects what was actually performed.
+      const chosenIdx = state.optionChoice[id] || 0;
+      const performedName = exc.options ? exc.options[chosenIdx].split('(')[0].trim() : exc.name;
+
+      exerciseDetails.push({
+        name: performedName,
+        blockLabel: block.label,
+        sets: log.map(s => ({
+          weight: s.weight || '',
+          reps: s.reps || '',
+          rpe: s.rpe || '',
+          checked: !!s.checked
+        }))
+      });
+    });
+  });
+
   state.history.unshift({
     id: `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
     date: new Date().toISOString(),
     plan: PLANS[state.currentPlan].title,
     day: `${day.label} — ${day.name}`,
     doneSets, totalSets,
-    note: ''
+    note: '',
+    exercises: exerciseDetails
   });
   saveHistory();
   document.getElementById('complete-summary').textContent = `${day.name} complete. ${doneSets}/${totalSets} sets logged. Recovery starts now.`;
@@ -1622,6 +1693,7 @@ function renderProgress(){
         </button>
       </div>
       <div class="session-actions ${isOpen?'open':''}" id="actions_${h.id}">
+        ${renderSessionExerciseLog(h)}
         <div class="session-field-row">
           <div class="session-field">
             <label>Date</label>
@@ -1649,6 +1721,43 @@ function renderProgress(){
     `;
     wrap.appendChild(card);
   });
+}
+
+function renderSessionExerciseLog(h){
+  if(!h.exercises || h.exercises.length === 0){
+    return `<div class="session-log-block">
+      <div class="session-log-block-label">Logged Detail</div>
+      <div class="session-log-empty-note">No per-set detail was saved for this session (logged before detailed tracking was added).</div>
+    </div>`;
+  }
+
+  const exercisesHtml = h.exercises.map(ex => {
+    const setsHtml = ex.sets.map((s, i) => {
+      const wt = s.weight !== '' ? s.weight : '—';
+      const reps = s.reps !== '' ? s.reps : '—';
+      const rpe = s.rpe !== '' ? s.rpe : '—';
+      return `
+        <div class="session-log-set-row">
+          <div class="set-num">#${i+1}</div>
+          <div class="field">WT <b>${wt}</b></div>
+          <div class="field">REPS <b>${reps}</b></div>
+          <div class="field">RPE <b>${rpe}</b></div>
+          <div class="done-icon ${s.checked ? 'done' : 'not-done'}">${s.checked ? '✓' : '—'}</div>
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="session-log-ex">
+        <div class="session-log-ex-name">${ex.name}</div>
+        ${setsHtml}
+      </div>
+    `;
+  }).join('');
+
+  return `<div class="session-log-block">
+    <div class="session-log-block-label">Logged Detail</div>
+    ${exercisesHtml}
+  </div>`;
 }
 
 function toggleSessionEditor(id){
