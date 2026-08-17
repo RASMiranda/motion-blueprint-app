@@ -3,7 +3,7 @@
 // Network-first: always try the live network copy first, so page updates
 // show up on next load without the user needing to clear any cache.
 // Falls back to the cached copy only when there's no network (offline use).
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `motion-blueprint-${CACHE_VERSION}`;
 const PRECACHE_URLS = ['./', './index.html'];
 
@@ -38,7 +38,16 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
-    fetch(event.request)
+    // { cache: 'no-store' } is essential here, not optional: without it,
+    // this fetch() call is itself subject to the browser's ordinary HTTP
+    // cache — including GitHub Pages' "Cache-Control: max-age=600" header
+    // — and could silently return a stale response without ever reaching
+    // the network. This is a *separate* cache layer from the one that
+    // "updateViaCache: 'none'" (set on the page's registration call)
+    // bypasses; that option only affects how the browser fetches sw.js
+    // itself, not how the worker's own fetch handler behaves. Both are
+    // needed for updates to always reach the visitor.
+    fetch(event.request, { cache: 'no-store' })
       .then((networkResponse) => {
         // Got a live copy — serve it, and refresh the cache for offline use.
         const responseClone = networkResponse.clone();
