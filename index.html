@@ -2,6 +2,15 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Belt-and-suspenders alongside the service worker's network-first fetch:
+     GitHub Pages sends "Cache-Control: max-age=600" on every file (it can't
+     be customized), so on the very first visit — before the service worker
+     is installed and in control — the browser could still reuse a cached
+     copy of this HTML for up to 10 minutes. These meta tags ask the browser
+     not to do that for the document itself. -->
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Motion Blueprint</title>
 <meta name="theme-color" content="#141414">
@@ -33,6 +42,21 @@
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  /* Browsers apply their own default text color to <button> elements
+     (often a system "buttontext" black) regardless of what's inherited
+     from a parent — this is set directly on the element by the browser's
+     own stylesheet, not just inherited, so it silently overrides the
+     app's --ink color on every button-based card (plan cards, day cards,
+     quick-access buttons, etc). Resetting color/font here, once, for
+     every button in the app is the standard fix. */
+  button {
+    color: inherit;
+    font-family: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
 
   html, body {
     margin: 0; padding: 0;
@@ -1827,16 +1851,28 @@ const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/jso
 document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
 
 // Service worker for offline support.
-// Registered from a real, static file (sw.js) at a fixed URL — this is
-// required for the browser's built-in update-detection to work at all.
-// A service worker generated fresh via a Blob URL on every load (the
-// previous approach) looks like a brand-new, unrelated worker each time,
-// so the browser can never tell "this is an updated version of the same
-// worker" and therefore never offers to update it.
+//
+// Root cause of updates not showing up: GitHub Pages serves every file,
+// including sw.js itself, with "Cache-Control: max-age=600" — meaning the
+// browser can reuse its local copy of sw.js for up to 10 minutes without
+// even asking the server if it changed. Since the browser's "is there an
+// update?" check only runs when it actually fetches sw.js over the
+// network, a cached sw.js means that check never fires at all — this
+// happens before any of the update-detection logic below even gets a
+// chance to run. GitHub Pages doesn't support custom response headers, so
+// this can't be fixed server-side; it has to be forced from here.
+//
+// { updateViaCache: 'none' } tells the browser to never use the HTTP
+// cache for sw.js specifically — always fetch it fresh over the network
+// on every registration check, regardless of Cache-Control headers.
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').then((reg) => {
-    // If a new sw.js is deployed, this fires once the new worker has
-    // finished installing in the background (it's "waiting" to activate).
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+    // Proactively ask the browser to check for a new sw.js right away,
+    // and again periodically — don't rely solely on the automatic check
+    // the browser normally only runs on navigation.
+    reg.update();
+    setInterval(() => reg.update(), 60 * 1000); // recheck every minute
+
     reg.addEventListener('updatefound', () => {
       const newWorker = reg.installing;
       if (!newWorker) return;
@@ -1850,6 +1886,17 @@ if ('serviceWorker' in navigator) {
       });
     });
   }).catch(() => { /* offline caching best-effort; app still works without it */ });
+
+  // Also re-check the moment the tab regains focus or comes back online —
+  // catches updates that happened while the tab was idle in the background.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      navigator.serviceWorker.getRegistration().then((reg) => reg && reg.update());
+    }
+  });
+  window.addEventListener('online', () => {
+    navigator.serviceWorker.getRegistration().then((reg) => reg && reg.update());
+  });
 
   // When the new service worker takes control (after SKIP_WAITING above),
   // reload once so all fetched assets come from the new version.
