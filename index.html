@@ -289,7 +289,6 @@
   .session-main .info { flex: 1; min-width: 0; }
   .session-main .info .t { font-size: 15.5px; font-weight: 700; }
   .session-main .info .d { font-size: 12.5px; color: var(--ink-dim); margin-top: 2px; }
-  .session-main .info .note { font-size: 12px; color: var(--ink-faint); margin-top: 4px; font-style: italic; }
   .session-main .status { font-size: 11px; color: var(--green); font-weight: 700; white-space: nowrap; }
   .session-toggle {
     background: none; border: none;
@@ -327,6 +326,14 @@
     font-size: 14px;
     padding: 10px 12px;
     font-family: inherit;
+  }
+  .session-readonly-value {
+    background: var(--bg-elevated);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink-dim);
+    font-size: 14px;
+    padding: 10px 12px;
   }
   .session-field textarea { resize: none; min-height: 60px; }
   .session-field-row { display: flex; gap: 10px; }
@@ -1646,7 +1653,6 @@ function finishWorkout(){
     plan: PLANS[state.currentPlan].title,
     day: `${day.label} — ${day.name}`,
     doneSets, totalSets,
-    note: '',
     exercises: exerciseDetails
   });
   saveHistory();
@@ -1667,9 +1673,8 @@ function renderProgress(){
     return;
   }
   state.history.forEach(h => {
-    // Backfill an id/note for any session logged before this feature existed.
+    // Backfill an id for any session logged before this feature existed.
     if(!h.id) h.id = `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-    if(h.note === undefined) h.note = '';
 
     const d = new Date(h.date);
     const isOpen = openSessionId === h.id;
@@ -1685,7 +1690,6 @@ function renderProgress(){
         <div class="info">
           <div class="t">${h.day}</div>
           <div class="d">${h.plan} · ${d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</div>
-          ${h.note ? `<div class="note">"${h.note}"</div>` : ''}
         </div>
         <div class="status">${h.doneSets}/${h.totalSets} sets</div>
         <button class="session-toggle ${isOpen?'open':''}" onclick="toggleSessionEditor('${h.id}')" aria-label="Edit session">
@@ -1701,12 +1705,8 @@ function renderProgress(){
           </div>
           <div class="session-field">
             <label>Sets done</label>
-            <input type="number" id="done_${h.id}" value="${h.doneSets}" min="0" max="${h.totalSets}">
+            <div class="session-readonly-value">${h.doneSets} / ${h.totalSets}</div>
           </div>
-        </div>
-        <div class="session-field">
-          <label>Notes</label>
-          <textarea id="note_${h.id}" placeholder="How did it feel? Any weights to remember?">${h.note}</textarea>
         </div>
         <div class="session-btn-row">
           <button class="session-btn-save" onclick="saveSessionEdit('${h.id}')">Save changes</button>
@@ -1770,8 +1770,6 @@ function saveSessionEdit(id){
   if(!entry) return;
 
   const dateInput = document.getElementById(`date_${id}`).value;
-  const doneInput = parseInt(document.getElementById(`done_${id}`).value, 10);
-  const noteInput = document.getElementById(`note_${id}`).value.trim();
 
   if(dateInput){
     // Preserve original time-of-day, just change the calendar date.
@@ -1780,10 +1778,6 @@ function saveSessionEdit(id){
     original.setFullYear(y, m-1, dd);
     entry.date = original.toISOString();
   }
-  if(!isNaN(doneInput)){
-    entry.doneSets = Math.max(0, Math.min(doneInput, entry.totalSets));
-  }
-  entry.note = noteInput;
 
   saveHistory();
   openSessionId = null;
