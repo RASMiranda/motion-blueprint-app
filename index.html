@@ -262,6 +262,39 @@
     font-weight: 700;
   }
 
+  /* ---------- Resume-in-progress-workout banner (home screen) ---------- */
+  .resume-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(232,162,58,0.14), rgba(232,162,58,0.05));
+    border: 1px solid rgba(232,162,58,0.35);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .resume-banner .icon {
+    width: 42px; height: 42px;
+    border-radius: 12px;
+    background: rgba(232,162,58,0.18);
+    color: var(--amber);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .resume-banner .icon svg { width: 20px; height: 20px; }
+  .resume-banner .info { flex: 1; min-width: 0; }
+  .resume-banner .info .rb-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    font-weight: 800;
+    margin-bottom: 2px;
+  }
+  .resume-banner .info .rb-title { font-size: 14.5px; font-weight: 700; }
+  .resume-banner .info .rb-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+  .resume-banner .chev { color: var(--amber); font-size: 20px; flex-shrink: 0; }
+
   /* ---------- Progress session cards (editable/deletable) ---------- */
   .session-card {
     background: var(--bg-card);
@@ -838,6 +871,8 @@
       <p>For the athlete in everyone.</p>
     </div>
 
+    <div id="resume-banner-wrap"></div>
+
     <div class="section-label">Choose your path</div>
     <div class="plan-select">
       <button class="plan-card" onclick="openPlan('total')">
@@ -1230,16 +1265,98 @@ const PLANS = {
 /* ============================================================
    STATE
    ============================================================ */
-let state = {
-  currentPlan: null,
-  currentDay: null,
-  blockIndex: 0,
-  optionChoice: {}, // exId -> option index
-  setLog: {},       // exId -> [{weight, reps, checked}]
-  history: JSON.parse(localStorage.getItem('mb_history') || '[]'),
-};
+/* ============================================================
+   STATE PERSISTENCE
+   Everything that matters for resuming exactly where the person
+   left off is saved to localStorage on every change: which plan/
+   day/block they're on, every logged WT/REPS/RPE/checked value,
+   and which exercise-option variant was chosen. Previously only
+   completed sessions (history) survived a reload — an in-progress
+   workout was lost the moment the tab closed or the phone locked.
+   ============================================================ */
+const STATE_KEY = 'mb_state';
+const HISTORY_KEY = 'mb_history';
 
-function saveHistory(){ localStorage.setItem('mb_history', JSON.stringify(state.history)); }
+function loadState(){
+  let saved = {};
+  try {
+    saved = JSON.parse(localStorage.getItem(STATE_KEY) || '{}');
+  } catch(e) {
+    // Corrupted or unreadable saved state (e.g. storage was full mid-write,
+    // or manually edited) — fall back to a clean slate rather than crash.
+    saved = {};
+  }
+  return {
+    currentPlan: saved.currentPlan || null,
+    currentDay: saved.currentDay !== undefined ? saved.currentDay : null,
+    blockIndex: saved.blockIndex || 0,
+    optionChoice: saved.optionChoice || {},
+    setLog: saved.setLog || {},
+    history: JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'),
+  };
+}
+
+let state = loadState();
+
+function saveHistory(){ localStorage.setItem(HISTORY_KEY, JSON.stringify(state.history)); }
+
+// Debounced so rapid typing (WT/REPS/RPE fields) doesn't hit localStorage
+// on every keystroke — writes settle 400ms after the last change. Only
+// used for free-text input; every other action (checking a set, picking
+// an option, changing blocks) saves immediately via saveStateNow, since a
+// reload right after one of those single discrete actions should never
+// lose it to a pending debounce.
+let saveStateTimer = null;
+function saveState(){
+  clearTimeout(saveStateTimer);
+  saveStateTimer = setTimeout(saveStateNow, 400);
+}
+
+function saveStateNow(){
+  clearTimeout(saveStateTimer);
+  try {
+    const toSave = {
+      currentPlan: state.currentPlan,
+      currentDay: state.currentDay,
+      blockIndex: state.blockIndex,
+      optionChoice: state.optionChoice,
+      setLog: state.setLog,
+    };
+    localStorage.setItem(STATE_KEY, JSON.stringify(toSave));
+  } catch(e) {
+    // Storage full or unavailable (e.g. private browsing in some
+    // browsers) — the app still works, it just won't resume a
+    // half-finished workout after a reload. Not fatal.
+  }
+}
+
+// Flush any pending debounced save immediately when the tab is about to
+// be hidden or closed (backgrounded, phone locked, browser closed) — the
+// scenario debouncing is riskiest for, since there's no guarantee a
+// pending setTimeout gets to run once the page starts unloading.
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'hidden') saveStateNow();
+});
+window.addEventListener('pagehide', saveStateNow);
+
+// Clears the "resume this workout" pointer specifically (which plan/day/
+// block was active) — used once a session is completed or explicitly
+// exited, so a finished workout doesn't linger and get offered as
+// "resume" next time. Does NOT touch setLog/optionChoice, since those
+// hold per-day exercise data that should only be cleared for the specific
+// day that was actually finished (handled separately in finishWorkout).
+function clearWorkoutState(){
+  state.currentPlan = null;
+  state.currentDay = null;
+  state.blockIndex = 0;
+  localStorage.setItem(STATE_KEY, JSON.stringify({
+    currentPlan: null,
+    currentDay: null,
+    blockIndex: 0,
+    optionChoice: state.optionChoice,
+    setLog: state.setLog,
+  }));
+}
 
 /* ============================================================
    NAVIGATION
@@ -1253,6 +1370,50 @@ function showScreen(id){
   window.scrollTo(0,0);
   const scr = document.getElementById(id);
   if(scr) scr.scrollTop = 0;
+  if(id === 'screen-home') renderResumeBanner();
+}
+
+// Shows a banner on Home offering to jump back into an in-progress
+// workout (saved via saveState on every change) — e.g. after the tab
+// was closed or the phone locked mid-session. Renders nothing if there's
+// no in-progress workout to resume.
+function renderResumeBanner(){
+  const wrap = document.getElementById('resume-banner-wrap');
+  if(!wrap) return;
+
+  if(state.currentPlan === null || state.currentDay === null){
+    wrap.innerHTML = '';
+    return;
+  }
+
+  const plan = PLANS[state.currentPlan];
+  const day = plan && plan.days[state.currentDay];
+  if(!day){
+    // Saved pointer doesn't match any real day (e.g. stale data from an
+    // earlier version) — clear it rather than show a broken resume link.
+    clearWorkoutState();
+    wrap.innerHTML = '';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <button class="resume-banner" onclick="resumeWorkout()">
+      <div class="icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M10 8l6 4-6 4V8z"/></svg>
+      </div>
+      <div class="info">
+        <div class="rb-label">In progress</div>
+        <div class="rb-title">${day.label} — ${day.name}</div>
+        <div class="rb-sub">${plan.title} · Block ${state.blockIndex + 1} of ${day.blocks.length}</div>
+      </div>
+      <div class="chev">›</div>
+    </button>
+  `;
+}
+
+function resumeWorkout(){
+  renderBlock();
+  showScreen('screen-workout');
 }
 
 function openPlan(key){
@@ -1343,6 +1504,7 @@ function startWorkout(planKey, dayIdx){
       }
     });
   });
+  saveStateNow();
   renderBlock();
   showScreen('screen-workout');
 }
@@ -1586,13 +1748,16 @@ function lookupVideo(name){
 
 function chooseOption(id, idx){
   state.optionChoice[id] = idx;
+  saveStateNow();
   renderBlock();
 }
 function updateSet(id, idx, field, val){
   state.setLog[id][idx][field] = val;
+  saveState();
 }
 function toggleSet(id, idx){
   state.setLog[id][idx].checked = !state.setLog[id][idx].checked;
+  saveStateNow();
   renderBlock();
   showToast('Set logged');
 }
@@ -1601,6 +1766,7 @@ function nextBlock(){
   const day = currentDayObj();
   if(state.blockIndex < day.blocks.length - 1){
     state.blockIndex++;
+    saveStateNow();
     renderBlock();
     document.getElementById('screen-workout').scrollTop = 0;
   } else {
@@ -1610,6 +1776,7 @@ function nextBlock(){
 function prevBlock(){
   if(state.blockIndex > 0){
     state.blockIndex--;
+    saveStateNow();
     renderBlock();
   }
 }
@@ -1656,6 +1823,15 @@ function finishWorkout(){
     exercises: exerciseDetails
   });
   saveHistory();
+
+  // Clear this day's in-progress logs/choices (keyed by day.id, so this
+  // only affects the just-finished day) and the "resume workout" pointer,
+  // so a repeat of this day starts fresh and a completed session isn't
+  // also offered as something to resume.
+  Object.keys(state.setLog).forEach(k => { if(k.startsWith(day.id + '_')) delete state.setLog[k]; });
+  Object.keys(state.optionChoice).forEach(k => { if(k.startsWith(day.id + '_')) delete state.optionChoice[k]; });
+  clearWorkoutState();
+
   document.getElementById('complete-summary').textContent = `${day.name} complete. ${doneSets}/${totalSets} sets logged. Recovery starts now.`;
   showScreen('screen-complete');
 }
@@ -1909,6 +2085,7 @@ function showToast(msg){
 function init(){
   renderWarmupSelect();
   renderProgress();
+  renderResumeBanner();
   initRpeDial();
 
   // Refresh progress each time tab opened
