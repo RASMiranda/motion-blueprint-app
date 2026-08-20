@@ -18,8 +18,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Motion">
-<link id="manifest-link" rel="manifest">
-<link id="apple-icon" rel="apple-touch-icon">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png">
 
 <style>
   :root{
@@ -2094,41 +2095,18 @@ function init(){
 init();
 
 /* ============================================================
-   PWA: manifest + service worker (inline, no external files needed)
+   PWA: service worker registration
+   Manifest and icons are real, static files (manifest.webmanifest
+   and ./icons/*.png) referenced directly in <head> — not generated
+   at runtime via Blob URLs. This matters for two reasons: a
+   blob: URL is only valid within the browser session that created
+   it, so external tools (like PWABuilder's analyzer, which fetches
+   the manifest independently to package the app) can't read it at
+   all; and it's the same class of staleness bug the service worker
+   itself had before switching to a real sw.js file — a freshly
+   generated blob looks like "new, unrelated content" every load
+   rather than a stable, cacheable, identifiable resource.
    ============================================================ */
-const ICON_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#141414"/>
-  <g transform="translate(96,140)">
-    <rect x="0" y="140" width="46" height="120" rx="8" fill="#3B6FF0"/>
-    <rect x="66" y="90" width="46" height="170" rx="8" fill="#3B6FF0"/>
-    <rect x="132" y="30" width="46" height="230" rx="8" fill="#3B6FF0"/>
-    <rect x="198" y="0" width="46" height="260" rx="8" fill="#F5F3EE"/>
-  </g>
-</svg>`.trim();
-
-function svgToDataUrl(svg){
-  return 'data:image/svg+xml;base64,' + btoa(svg);
-}
-
-const iconUrl = svgToDataUrl(ICON_SVG);
-document.getElementById('apple-icon').href = iconUrl;
-
-const manifest = {
-  name: "Motion Blueprint",
-  short_name: "Motion",
-  start_url: "./",
-  scope: "./",
-  display: "standalone",
-  background_color: "#141414",
-  theme_color: "#141414",
-  orientation: "portrait",
-  icons: [
-    { src: iconUrl, sizes: "512x512", type: "image/svg+xml", purpose: "any maskable" }
-  ]
-};
-const manifestBlob = new Blob([JSON.stringify(manifest)], {type:'application/json'});
-document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
 
 // Service worker for offline support.
 //

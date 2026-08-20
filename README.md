@@ -29,9 +29,13 @@ Repo Settings → Pages → Source: `Deploy from branch` → `main` / `root` →
 
 ## Tech notes
 
-Two files: `index.html` (the app) and `sw.js` (the service worker). No build step, no dependencies. Uses a Web App Manifest (generated inline) and a real, static Service Worker file to enable offline caching and home-screen installability.
+Files: `index.html` (the app), `sw.js` (service worker), `manifest.webmanifest` (Web App Manifest), and `icons/` (PNG icons at the sizes Android/PWABuilder require). No build step, no dependencies.
 
-**Deploying an update:** after pushing a change to `index.html`, open `sw.js` and bump `CACHE_VERSION` (e.g. `'v2'` → `'v3'`) in the same commit. This tells visitors' browsers a new version exists, so they get it automatically on their next visit — no manual cache-clearing needed. Skipping this step means the update may not reach people who've already loaded the app once, since the service worker serves the network's latest copy by default but still needs a version bump to properly retire old cached assets.
+The manifest and icons are real, static files — not generated at runtime — so external tools like PWABuilder's analyzer can fetch and read them directly when packaging the Android app. `icons/` also includes the two source SVGs the PNGs were rendered from, in case the icon design ever needs updating.
+
+**Deploying an update:** after pushing a change to `index.html`, open `sw.js` and bump `CACHE_VERSION` (e.g. `'v8'` → `'v9'`) in the same commit. This tells visitors' browsers a new version exists, so they get it automatically on their next visit — no manual cache-clearing needed. Skipping this step means the update may not reach people who've already loaded the app once, since the service worker serves the network's latest copy by default but still needs a version bump to properly retire old cached assets.
+
+**Building the Android APK:** host the repo on GitHub Pages, then paste the live URL into [pwabuilder.com](https://www.pwabuilder.com). It should report a fully installable PWA (valid manifest, correctly-sized icons including a maskable variant, and an active service worker) with no blocking issues. The generated package uses a Trusted Web Activity, meaning it opens the same live site inside a chrome-less wrapper — the app's offline support and local data both come from the service worker and localStorage exactly as they do in the browser, not from anything bundled into the APK itself.
 
 ## Credit
 

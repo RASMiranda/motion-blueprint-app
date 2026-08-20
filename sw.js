@@ -3,9 +3,26 @@
 // Network-first: always try the live network copy first, so page updates
 // show up on next load without the user needing to clear any cache.
 // Falls back to the cached copy only when there's no network (offline use).
-const CACHE_VERSION = 'v8';
+const CACHE_VERSION = 'v9';
 const CACHE_NAME = `motion-blueprint-${CACHE_VERSION}`;
-const PRECACHE_URLS = ['./', './index.html'];
+
+// Everything the app needs to be fully usable offline immediately after
+// install — not just the HTML shell. Icons and the manifest matter
+// especially for the packaged Android app (via PWABuilder): the OS reads
+// these to render the home-screen icon and app info, and a TWA should
+// never show a broken icon or fail a manifest check just because the
+// device happened to be offline the moment it was needed.
+const PRECACHE_URLS = [
+  './',
+  './index.html',
+  './manifest.webmanifest',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
+  './icons/icon-maskable-192.png',
+  './icons/icon-maskable-512.png',
+  './icons/apple-touch-icon.png',
+  './icons/favicon-32.png',
+];
 
 self.addEventListener('install', (event) => {
   // Activate this new service worker as soon as it finishes installing,

@@ -1,0 +1,20 @@
+{
+  "id": "/motion-blueprint-app/",
+  "name": "Motion Blueprint",
+  "short_name": "Motion",
+  "description": "Offline-first training tracker for the Theory of Motion program — 3-Day Total Body and 4-Day Upper/Lower plans, guided warm-ups, RPE tracking, and full workout logging.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#141414",
+  "theme_color": "#141414",
+  "orientation": "portrait",
+  "categories": ["fitness", "health", "sports"],
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "./icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
