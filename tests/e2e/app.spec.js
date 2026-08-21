@@ -47,6 +47,41 @@ test.describe('Motion Blueprint', () => {
     await expect(page.locator('.plan-card', { hasText: 'Upper / Lower Blueprint' })).toBeVisible();
   });
 
+  test('shows an install-the-app banner with a working APK link when run as a browser tab', async ({ page }) => {
+    await gotoAndSettle(page);
+    const banner = page.locator('#install-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('Get the app');
+
+    const link = page.locator('#install-banner-link');
+    await expect(link).toHaveAttribute('href', /^https:\/\/github\.com\/RASMiranda\/motion-blueprint-app\/releases\/download\/.+\/Motion\.apk$/);
+    await expect(link).toHaveAttribute('target', '_blank');
+  });
+
+  test('hides the install banner when already running as the installed app', async ({ page }) => {
+    // Stub matchMedia before any page script runs, so isInstalledApp() sees
+    // display-mode: standalone as matching — the same signal a real
+    // installed/TWA session reports.
+    await page.addInitScript(() => {
+      const realMatchMedia = window.matchMedia.bind(window);
+      window.matchMedia = (query) => {
+        if (typeof query === 'string' && query.includes('display-mode: standalone')) {
+          return /** @type {MediaQueryList} */ ({
+            matches: true, media: query,
+            addListener(){}, removeListener(){},
+            addEventListener(){}, removeEventListener(){},
+            dispatchEvent(){ return true; }
+          });
+        }
+        return realMatchMedia(query);
+      };
+    });
+
+    await gotoAndSettle(page);
+    await expect(page.locator('#install-banner')).not.toHaveClass(/show/);
+    await expect(page.locator('#install-banner')).not.toBeVisible();
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);
