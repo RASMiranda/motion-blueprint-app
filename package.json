@@ -1,6 +1,6 @@
 {
   "name": "motion-blueprint-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Offline-first training tracker for Theory of Motion program",
   "private": true,
   "scripts": {
