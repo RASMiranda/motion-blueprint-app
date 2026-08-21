@@ -101,6 +101,23 @@ test.describe('Motion Blueprint', () => {
     await expect(page.locator('#progress-list .session-card')).toHaveCount(1);
   });
 
+  test('Progress screen shows migration guidance and export is a no-op with nothing logged', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('button.tab-btn[data-tab="screen-progress"]').click();
+
+    // The hint that tells webapp users how to bring their history to the APK.
+    await expect(page.locator('.io-hint')).toContainText('Export');
+    await expect(page.locator('.io-hint')).toContainText('Import');
+
+    // Exporting with zero logged sessions should not trigger a download —
+    // just a toast — since there'd be nothing meaningful in the file.
+    let downloadFired = false;
+    page.once('download', () => { downloadFired = true; });
+    await page.locator('.io-btn', { hasText: 'Export' }).click();
+    await expect(page.locator('#toast')).toContainText('No sessions to export yet');
+    expect(downloadFired).toBe(false);
+  });
+
   test('works offline after the first load (service worker precache)', async ({ page, context }) => {
     await gotoAndSettle(page);
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null, null, { timeout: 10000 });
