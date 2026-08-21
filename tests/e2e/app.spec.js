@@ -82,6 +82,18 @@ test.describe('Motion Blueprint', () => {
     await expect(page.locator('#install-banner')).not.toBeVisible();
   });
 
+  test('About screen links to the GitHub repo', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.quick-btn', { hasText: "Coaches' Note" }).click();
+    await expect(page.locator('#screen-about')).toBeVisible();
+
+    const link = page.locator('#github-repo-link');
+    await expect(link).toBeVisible();
+    await expect(link).toContainText('View source on GitHub');
+    await expect(link).toHaveAttribute('href', 'https://github.com/RASMiranda/motion-blueprint-app');
+    await expect(link).toHaveAttribute('target', '_blank');
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);
