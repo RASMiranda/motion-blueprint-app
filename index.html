@@ -402,6 +402,22 @@
   .delete-confirm .confirm-yes { background: #e35b5b; color: #fff; }
   .delete-confirm .confirm-no { background: var(--bg-elevated); color: var(--ink-dim); }
 
+  /* ---------- Progress screen: export/import sessions (data migration) ---------- */
+  .io-row { display: flex; gap: 10px; margin: 18px 0 4px 0; }
+  .io-btn {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .io-btn:active { background: var(--bg-card-active); }
+  .io-btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
   /* ---------- Logged exercise detail (inside expanded session card) ---------- */
   .session-log-block { margin-bottom: 16px; }
   .session-log-block-label {
@@ -1005,6 +1021,17 @@
     </div>
     <div class="eyebrow">TRACKED</div>
     <h2 class="page-title">My Progress</h2>
+    <div class="io-row">
+      <button class="io-btn" onclick="exportSessions()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
+        Export
+      </button>
+      <button class="io-btn" onclick="triggerImportSessions()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 15V3M7 8l5-5 5 5M4 21h16"/></svg>
+        Import
+      </button>
+    </div>
+    <input type="file" id="import-file-input" accept="application/json,.json" style="display:none" onchange="importSessionsFile(event)">
     <div id="progress-list" style="margin-top:20px;"></div>
   </div>
 
@@ -1976,6 +2003,97 @@ function deleteSession(id){
   if(openSessionId === id) openSessionId = null;
   renderProgress();
   showToast('Session deleted');
+}
+
+/* ============================================================
+   EXPORT / IMPORT — carries logged sessions between installs
+   (e.g. webapp → APK migration, or a simple backup). JSON is the
+   format: it's a lossless dump of the exact history objects the
+   rest of this app already reads/writes, so import needs no
+   transformation, and it's plain text if anyone wants to peek
+   inside it.
+   ============================================================ */
+const EXPORT_FORMAT_VERSION = 1;
+
+function exportSessions(){
+  if(state.history.length === 0){
+    showToast('No sessions to export yet');
+    return;
+  }
+  const payload = {
+    app: 'motion-blueprint',
+    type: 'session-export',
+    version: EXPORT_FORMAT_VERSION,
+    exportedAt: new Date().toISOString(),
+    sessions: state.history
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `motion-blueprint-sessions-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  showToast(`Exported ${state.history.length} session${state.history.length === 1 ? '' : 's'}`);
+}
+
+function triggerImportSessions(){
+  document.getElementById('import-file-input').click();
+}
+
+function importSessionsFile(event){
+  const file = event.target.files[0];
+  event.target.value = ''; // reset so re-selecting the same file still fires onchange
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    let parsed;
+    try {
+      parsed = JSON.parse(reader.result);
+    } catch(e) {
+      showToast("That file isn't valid JSON");
+      return;
+    }
+
+    // Accept either our {sessions:[...]} export shape, or a bare array,
+    // so a manually trimmed/edited file still imports.
+    const incoming = Array.isArray(parsed) ? parsed : parsed.sessions;
+    if(!Array.isArray(incoming)){
+      showToast('Not a recognized Motion Blueprint export');
+      return;
+    }
+
+    const existingIds = new Set(state.history.map(h => h.id));
+    let added = 0, skipped = 0;
+
+    incoming.forEach(s => {
+      // Minimal shape check — needs at least a date and a day label to be
+      // a usable session entry.
+      if(!s || typeof s !== 'object' || !s.date || !s.day){ skipped++; return; }
+      if(!s.id) s.id = `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+      // Same id already present → this exact session was imported (or
+      // logged) before here; skip it rather than create a duplicate card.
+      if(existingIds.has(s.id)){ skipped++; return; }
+      existingIds.add(s.id);
+      state.history.push(s);
+      added++;
+    });
+
+    if(added === 0){
+      showToast(skipped ? 'All sessions in that file were already here' : 'No sessions found in that file');
+      return;
+    }
+
+    state.history.sort((a,b) => new Date(b.date) - new Date(a.date));
+    saveHistory();
+    renderProgress();
+    showToast(`Imported ${added} session${added === 1 ? '' : 's'}${skipped ? `, skipped ${skipped} already here` : ''}`);
+  };
+  reader.onerror = () => showToast('Could not read that file');
+  reader.readAsText(file);
 }
 
 /* ============================================================
