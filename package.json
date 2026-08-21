@@ -1,0 +1,13 @@
+{
+  "name": "motion-blueprint-app",
+  "version": "1.0.0",
+  "description": "Offline-first training tracker for Theory of Motion program",
+  "private": true,
+  "scripts": {
+    "dev": "python3 -m http.server 8000",
+    "test": "echo 'Run manual Playwright tests as needed'"
+  },
+  "keywords": ["pwa", "fitness", "offline", "app"],
+  "author": "RASMiranda",
+  "license": "MIT"
+}
