@@ -1,6 +1,6 @@
 # Motion Blueprint
 
-An offline-first training app built around the Theory of Motion program by Jason & Lauren Pak. Installs straight to your Android home screen — no app store, no account, no internet connection needed once it's loaded.
+An offline-first training app built around the Theory of Motion program by Jason & Lauren Pak. No app store, no account, no internet connection needed once it's loaded.
 
 ## What's inside
 
@@ -9,38 +9,30 @@ An offline-first training app built around the Theory of Motion program by Jason
 - **Workout tracker** — log weight, reps, and RPE per set, with exercise-swap options built in (e.g. barbell vs. dumbbell)
 - **Rest timer** — tap to start, with a live countdown ring
 - **RPE dial** — a quick-reference dial for calibrating effort (1–10 scale)
-- **Progress log** — see completed sessions and sets logged over time
+- **Progress log** — see completed sessions and sets logged over time, with export/import to move your history between devices or installs
 - **Works offline** — the whole app is cached on first load; no signal needed at the gym
 
-## Install on Android
+## Get the app
 
-**Option A — as a installable web app (fastest, no build step)**
-1. Open `index.html` on your phone in Chrome — either host it (e.g. via GitHub Pages) or transfer the file directly to your device and open it locally
-2. Tap the **⋮** menu → **Add to Home screen**
+**Recommended — install the Android app**
+1. Download `Motion.apk` from the [latest release](https://github.com/RASMiranda/motion-blueprint-app/releases/latest)
+2. Tap the downloaded file to install (Android will ask permission to install from this source the first time — allow it)
 3. Launch it from your home screen like any other app
 
-**Option B — as a real APK**
-1. Host `index.html` at a public URL (e.g. GitHub Pages — see below)
-2. Go to [pwabuilder.com](https://www.pwabuilder.com), paste the URL
-3. Download the generated Android package
-
-### Hosting on GitHub Pages
-Repo Settings → Pages → Source: `Deploy from branch` → `main` / `root` → Save. Your app will be live at `https://<username>.github.io/motion-blueprint-app/`.
+**Backup — use it in the browser**
+The same app runs live at **https://rasmiranda.github.io/motion-blueprint-app/** — works in any browser, no install required, and can still be added to your home screen as a PWA (browser menu → Add to Home screen) if you'd rather not install the APK.
 
 ## Tech notes
 
-Files: `index.html` (the app), `sw.js` (service worker), `manifest.webmanifest` (Web App Manifest), and `icons/` (PNG icons at the sizes Android/PWABuilder require). No build step, no dependencies.
+Files: `index.html` (the app), `sw.js` (service worker), `js/session-utils.js` (session export/import logic), `manifest.webmanifest` (Web App Manifest), and `icons/` (PNG icons at the sizes Android packaging tools require). No build step, no dependencies for the app itself.
 
-The manifest and icons are real, static files — not generated at runtime — so external tools like PWABuilder's analyzer can fetch and read them directly when packaging the Android app. `icons/` also includes the two source SVGs the PNGs were rendered from, in case the icon design ever needs updating.
+The manifest and icons are real, static files — not generated at runtime — so packaging tools can fetch and read them directly when building the Android package. `icons/` also includes the two source SVGs the PNGs were rendered from, in case the icon design ever needs updating.
 
-# Motion Blueprint
-
-...
+The APK is a thin wrapper around the live site (a Trusted Web Activity) — its offline support and local data both come from the service worker and localStorage exactly as they do in the browser, not from anything bundled separately into the APK itself. In practice that means the APK rarely needs to be rebuilt: most updates reach it automatically the next time it's opened with a signal, the same way the live site updates.
 
 ## For developers
-See `DEVELOPMENT.md` for setup and deployment notes.
+See `DEVELOPMENT.md` for setup, testing, and deployment notes.
 See `CHANGELOG.md` for version history.
-me-less wrapper — the app's offline support and local data both come from the service worker and localStorage exactly as they do in the browser, not from anything bundled into the APK itself.
 
 ## Credit
 
