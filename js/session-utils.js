@@ -39,6 +39,15 @@
     };
   }
 
+  // The exact filename exportSessions() saves as — pulled out here so the
+  // UI's "here's exactly what got saved" confirmation message and the
+  // actual download always agree, and so the format is unit-testable.
+  // `date` is injectable for deterministic tests; defaults to "now".
+  function buildExportFilename(date) {
+    const d = date || new Date();
+    return `motion-blueprint-sessions-${d.toISOString().slice(0, 10)}.json`;
+  }
+
   // Parses raw import file text into an array of session-like objects.
   // Accepts either our own {sessions:[...]} export shape or a bare
   // array, so a manually trimmed/edited file still imports. Throws a
@@ -86,6 +95,7 @@
     EXPORT_FORMAT_VERSION,
     generateSessionId,
     buildExportPayload,
+    buildExportFilename,
     parseImportPayload,
     mergeImportedSessions
   };
