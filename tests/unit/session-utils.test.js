@@ -41,6 +41,24 @@ test('buildExportPayload', async (t) => {
   });
 });
 
+test('buildExportFilename', async (t) => {
+  await t.test('matches what exportSessions() actually saves as', () => {
+    const name = SessionUtils.buildExportFilename(new Date('2026-06-01T12:34:56.000Z'));
+    assert.equal(name, 'motion-blueprint-sessions-2026-06-01.json');
+  });
+
+  await t.test('is always a .json file with no path separators (safe as a bare filename)', () => {
+    const name = SessionUtils.buildExportFilename(new Date('2026-01-01'));
+    assert.match(name, /^motion-blueprint-sessions-\d{4}-\d{2}-\d{2}\.json$/);
+    assert.ok(!name.includes('/') && !name.includes('\\'));
+  });
+
+  await t.test('defaults to today when no date given', () => {
+    const todayStamp = new Date().toISOString().slice(0, 10);
+    assert.equal(SessionUtils.buildExportFilename(), `motion-blueprint-sessions-${todayStamp}.json`);
+  });
+});
+
 test('parseImportPayload', async (t) => {
   await t.test('accepts our own {sessions:[...]} export shape', () => {
     const raw = JSON.stringify({ app: 'motion-blueprint', sessions: [{ id: 'a', date: '2026-01-01', day: 'Day 1' }] });

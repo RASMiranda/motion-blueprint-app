@@ -875,6 +875,8 @@
     border-radius: 12px;
     font-size: 13px;
     font-weight: 600;
+    max-width: calc(100% - 40px);
+    text-align: center;
     opacity: 0;
     transition: all 0.25s ease;
     z-index: 200;
@@ -2030,16 +2032,22 @@ function exportSessions(){
     return;
   }
   const payload = SessionUtils.buildExportPayload(state.history);
+  const filename = SessionUtils.buildExportFilename();
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `motion-blueprint-sessions-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  showToast(`Exported ${state.history.length} session${state.history.length === 1 ? '' : 's'}`);
+  // Name the exact file and where it landed — the browser handles the
+  // actual save silently (no "Save As" dialog on Android), so this is
+  // the only place the person finds out what to look for afterward.
+  // Longer duration than the default toast: this message has more to
+  // read (a full filename) than a short status update.
+  showToast(`Saved ${filename} to your Downloads folder`, 4000);
 }
 
 function triggerImportSessions(){
@@ -2171,12 +2179,12 @@ function initRpeDial(){
    TOAST
    ============================================================ */
 let toastTimeout;
-function showToast(msg){
+function showToast(msg, duration){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(()=>t.classList.remove('show'), 1400);
+  toastTimeout = setTimeout(()=>t.classList.remove('show'), duration || 1400);
 }
 
 /* ============================================================

@@ -71,6 +71,11 @@ test.describe('Motion Blueprint', () => {
 
     expect(download.suggestedFilename()).toMatch(/^motion-blueprint-sessions-\d{4}-\d{2}-\d{2}\.json$/);
 
+    // The confirmation toast must name this exact file, so the person
+    // knows what to look for afterward instead of guessing.
+    await expect(page.locator('#toast')).toContainText(download.suggestedFilename());
+    await expect(page.locator('#toast')).toContainText('Downloads');
+
     const savePath = path.join(os.tmpdir(), `mb-export-test-${Date.now()}.json`);
     await download.saveAs(savePath);
     const payload = JSON.parse(fs.readFileSync(savePath, 'utf8'));
