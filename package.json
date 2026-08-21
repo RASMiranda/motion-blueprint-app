@@ -5,9 +5,15 @@
   "private": true,
   "scripts": {
     "dev": "python3 -m http.server 8000",
-    "test": "echo 'Run manual Playwright tests as needed'"
+    "check:pwa": "node scripts/check-pwa-readiness.js",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "test:e2e": "playwright test",
+    "test": "npm run check:pwa && npm run test:unit && npm run test:e2e"
   },
   "keywords": ["pwa", "fitness", "offline", "app"],
   "author": "RASMiranda",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.48.0"
+  }
 }

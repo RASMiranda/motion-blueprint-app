@@ -15,6 +15,7 @@ const CACHE_NAME = `motion-blueprint-${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './js/session-utils.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',

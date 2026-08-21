@@ -1090,6 +1090,7 @@
   <div class="toast" id="toast"></div>
 </div>
 
+<script src="./js/session-utils.js"></script>
 <script>
 /* ============================================================
    DATA MODEL
@@ -1843,7 +1844,7 @@ function finishWorkout(){
   });
 
   state.history.unshift({
-    id: `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+    id: SessionUtils.generateSessionId(),
     date: new Date().toISOString(),
     plan: PLANS[state.currentPlan].title,
     day: `${day.label} — ${day.name}`,
@@ -1878,7 +1879,7 @@ function renderProgress(){
   }
   state.history.forEach(h => {
     // Backfill an id for any session logged before this feature existed.
-    if(!h.id) h.id = `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+    if(!h.id) h.id = SessionUtils.generateSessionId();
 
     const d = new Date(h.date);
     const isOpen = openSessionId === h.id;
@@ -2011,22 +2012,16 @@ function deleteSession(id){
    format: it's a lossless dump of the exact history objects the
    rest of this app already reads/writes, so import needs no
    transformation, and it's plain text if anyone wants to peek
-   inside it.
+   inside it. The actual payload shape and merge/dedupe logic live
+   in js/session-utils.js (SessionUtils) — shared with, and covered
+   by, the unit tests under tests/unit/.
    ============================================================ */
-const EXPORT_FORMAT_VERSION = 1;
-
 function exportSessions(){
   if(state.history.length === 0){
     showToast('No sessions to export yet');
     return;
   }
-  const payload = {
-    app: 'motion-blueprint',
-    type: 'session-export',
-    version: EXPORT_FORMAT_VERSION,
-    exportedAt: new Date().toISOString(),
-    sessions: state.history
-  };
+  const payload = SessionUtils.buildExportPayload(state.history);
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -2050,44 +2045,22 @@ function importSessionsFile(event){
 
   const reader = new FileReader();
   reader.onload = () => {
-    let parsed;
+    let incoming;
     try {
-      parsed = JSON.parse(reader.result);
+      incoming = SessionUtils.parseImportPayload(reader.result);
     } catch(e) {
-      showToast("That file isn't valid JSON");
+      showToast(e.message);
       return;
     }
 
-    // Accept either our {sessions:[...]} export shape, or a bare array,
-    // so a manually trimmed/edited file still imports.
-    const incoming = Array.isArray(parsed) ? parsed : parsed.sessions;
-    if(!Array.isArray(incoming)){
-      showToast('Not a recognized Motion Blueprint export');
-      return;
-    }
-
-    const existingIds = new Set(state.history.map(h => h.id));
-    let added = 0, skipped = 0;
-
-    incoming.forEach(s => {
-      // Minimal shape check — needs at least a date and a day label to be
-      // a usable session entry.
-      if(!s || typeof s !== 'object' || !s.date || !s.day){ skipped++; return; }
-      if(!s.id) s.id = `sess_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-      // Same id already present → this exact session was imported (or
-      // logged) before here; skip it rather than create a duplicate card.
-      if(existingIds.has(s.id)){ skipped++; return; }
-      existingIds.add(s.id);
-      state.history.push(s);
-      added++;
-    });
+    const { merged, added, skipped } = SessionUtils.mergeImportedSessions(state.history, incoming);
 
     if(added === 0){
       showToast(skipped ? 'All sessions in that file were already here' : 'No sessions found in that file');
       return;
     }
 
-    state.history.sort((a,b) => new Date(b.date) - new Date(a.date));
+    state.history = merged;
     saveHistory();
     renderProgress();
     showToast(`Imported ${added} session${added === 1 ? '' : 's'}${skipped ? `, skipped ${skipped} already here` : ''}`);

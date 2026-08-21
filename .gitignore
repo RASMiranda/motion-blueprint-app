@@ -4,3 +4,6 @@ node_modules/
 /icons/*.png.bak
 *.swp
 *~
+/test-results/
+/playwright-report/
+/blob-report/
