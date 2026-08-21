@@ -296,6 +296,37 @@
   .resume-banner .info .rb-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
   .resume-banner .chev { color: var(--amber); font-size: 20px; flex-shrink: 0; }
 
+  /* ---------- Install-the-app banner (home screen, browser tab only) ----------
+     Hidden by default; shown by JS only when NOT already running as the
+     installed app (see isInstalledApp()) — someone using the installed app
+     doesn't need a link to install it. */
+  .install-banner {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(59,111,240,0.14), rgba(59,111,240,0.05));
+    border: 1px solid rgba(59,111,240,0.35);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner .ib-text { flex: 1; min-width: 0; }
+  .install-banner .ib-title { font-size: 13.5px; font-weight: 700; }
+  .install-banner .ib-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; line-height: 1.4; }
+  .install-banner .ib-link {
+    flex-shrink: 0;
+    background: var(--blue);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .install-banner .ib-link:active { background: var(--blue-dim); }
+
   /* ---------- Progress session cards (editable/deletable) ---------- */
   .session-card {
     background: var(--bg-card);
@@ -895,6 +926,14 @@
       <div class="brand"><span class="logo-mark"><span></span><span></span><span></span></span> Theory of Motion</div>
       <h1>Motion<br>Blueprint</h1>
       <p>For the athlete in everyone.</p>
+    </div>
+
+    <div class="install-banner" id="install-banner">
+      <div class="ib-text">
+        <div class="ib-title">Using this in your browser?</div>
+        <div class="ib-sub">Get the installed app — looks better, and works fully offline.</div>
+      </div>
+      <a class="ib-link" id="install-banner-link" href="https://github.com/RASMiranda/motion-blueprint-app/releases/download/v1.1.0/Motion.apk" target="_blank" rel="noopener">Get the app</a>
     </div>
 
     <div id="resume-banner-wrap"></div>
@@ -2190,10 +2229,28 @@ function showToast(msg, duration){
 /* ============================================================
    INIT
    ============================================================ */
+/* ============================================================
+   INSTALL BANNER — nudges browser-tab visitors toward the
+   installed app (better UX, fully offline), and stays hidden for
+   anyone already running it as an installed/standalone app.
+   ============================================================ */
+function isInstalledApp(){
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.matchMedia('(display-mode: fullscreen)').matches ||
+         window.navigator.standalone === true; // iOS Safari home-screen apps
+}
+
+function renderInstallBanner(){
+  if(!isInstalledApp()){
+    document.getElementById('install-banner').classList.add('show');
+  }
+}
+
 function init(){
   renderWarmupSelect();
   renderProgress();
   renderResumeBanner();
+  renderInstallBanner();
   initRpeDial();
 
   // Refresh progress each time tab opened

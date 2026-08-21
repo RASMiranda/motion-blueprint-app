@@ -35,6 +35,7 @@ These three checks are also what CI (`.github/workflows/deploy.yml`) runs on eve
 4. Bump `CACHE_VERSION` in `sw.js` whenever you touch a precached file (`index.html`, `sw.js`, `js/session-utils.js`, `manifest.webmanifest`) — e.g., `v9` → `v10`. `npm run check:pwa` catches a forgotten bump.
 5. Run `npm test` (or let CI do it) before merging
 6. Commit and push to main → CI re-runs the same checks, then deploys to GitHub Pages only if they pass
+7. **Publishing a new APK release?** Update the hardcoded download link in `index.html`'s `#install-banner-link` (and the `install banner` E2E test's URL pattern if the repo/tag format ever changes) to point at the new release tag
 
 ## CI / deploy gate
 GitHub Pages is configured to deploy via Actions (Settings → Pages → Source: "GitHub Actions"), not "Deploy from branch" — so a push to `main` only reaches the live site once the `test` job in `deploy.yml` passes (static checks + unit tests + Playwright E2E). A PR shows the same `test` job as a required status check before it can be merged.
