@@ -1,0 +1,17 @@
+{
+  "app": "motion-blueprint",
+  "type": "session-export",
+  "version": 1,
+  "exportedAt": "2026-01-01T00:00:00.000Z",
+  "sessions": [
+    {
+      "id": "sess_fixture_import_1",
+      "date": "2026-01-01T00:00:00.000Z",
+      "plan": "3-Day Total Body",
+      "day": "Day 1 — Imported Fixture Session",
+      "doneSets": 5,
+      "totalSets": 6,
+      "exercises": []
+    }
+  ]
+}

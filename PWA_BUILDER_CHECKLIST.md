@@ -1,5 +1,10 @@
 # PWABuilder Readiness Checklist
 
+Most of this is now enforced automatically by `npm run check:pwa`
+(`scripts/check-pwa-readiness.js`), which also runs in CI on every push
+and PR before the site deploys. What's left below is what only a human
+eyeballing pwabuilder.com's own report card can catch.
+
 Before uploading to pwabuilder.com:
 
 - [ ] Manifest (`manifest.webmanifest`) is real static file, not Blob

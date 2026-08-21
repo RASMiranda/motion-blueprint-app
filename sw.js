@@ -3,7 +3,7 @@
 // Network-first: always try the live network copy first, so page updates
 // show up on next load without the user needing to clear any cache.
 // Falls back to the cached copy only when there's no network (offline use).
-const CACHE_VERSION = 'v9';
+const CACHE_VERSION = 'v10';
 const CACHE_NAME = `motion-blueprint-${CACHE_VERSION}`;
 
 // Everything the app needs to be fully usable offline immediately after
@@ -15,6 +15,7 @@ const CACHE_NAME = `motion-blueprint-${CACHE_VERSION}`;
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './js/session-utils.js',
   './manifest.webmanifest',
   './icons/icon-192.png',
   './icons/icon-512.png',
