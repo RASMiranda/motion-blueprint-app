@@ -403,7 +403,14 @@
   .delete-confirm .confirm-no { background: var(--bg-elevated); color: var(--ink-dim); }
 
   /* ---------- Progress screen: export/import sessions (data migration) ---------- */
-  .io-row { display: flex; gap: 10px; margin: 18px 0 4px 0; }
+  .io-hint {
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    margin: 14px 0 0 0;
+  }
+  .io-hint b { color: var(--ink); }
+  .io-row { display: flex; gap: 10px; margin: 12px 0 4px 0; }
   .io-btn {
     flex: 1;
     background: var(--bg-card);
@@ -1021,6 +1028,7 @@
     </div>
     <div class="eyebrow">TRACKED</div>
     <h2 class="page-title">My Progress</h2>
+    <p class="io-hint">Switching from the browser version to this app? Open the webapp, tap <b>Export</b>, then come back here and tap <b>Import</b> to bring your logged sessions with you.</p>
     <div class="io-row">
       <button class="io-btn" onclick="exportSessions()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
