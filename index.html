@@ -550,6 +550,17 @@
     background: var(--blue);
     color: #fff;
   }
+  .option-why {
+    background: rgba(59,111,240,0.1);
+    border: 1px solid rgba(59,111,240,0.25);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+    margin: -4px 0 14px 0;
+  }
+  .option-why b { color: var(--ink); }
 
   .exercise-card {
     background: var(--bg-card);
@@ -1210,6 +1221,13 @@ function ex(name, tag, options, reps, sets, rest, note){
   return { name, tag, options, reps, sets, rest, note };
 }
 
+// Each alternative in an exercise's options array is { l: label, w: "why
+// you'd pick this instead" }. `w` is straight from the source PDF's own
+// "choose this option if..." guidance — omitted (not fabricated) for
+// alternatives the PDF doesn't give an explicit reason for, usually the
+// first/default option in a pair.
+function opt(l, w){ return w ? { l, w } : { l }; }
+
 const PLANS = {
   total: {
     title: "3-Day Total Body",
@@ -1217,15 +1235,15 @@ const PLANS = {
     days: [
       { id:"t1", label:"Day 1", name:"Squat Focus", sub:"Lower body emphasis", warmup:1, blocks:[
         { label:"A · Power Development", exercises:[
-          ex("Box Jumps / Squat Jumps","Power",["Box Jumps","Squat Jumps (no box)"],"5 reps",3,30,"Explosive — reset between reps."),
+          ex("Box Jumps / Squat Jumps","Power",[opt("Box Jumps"),opt("Squat Jumps (no box)","No elevated surface to jump onto? Use this instead.")],"5 reps",3,30,"Explosive — reset between reps."),
         ]},
         { label:"B1 · Squat Variations ↔ B2 · Rear Delts (superset)", exercises:[
-          ex("Barbell Back Squat / DB Goblet Squat","Squat",["Barbell Back Squat","Dumbbell Goblet Squat"],"8 reps @ 6-7 RPE",4,90,"High or low bar. Superset with B2."),
-          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",["2DB Bent Over Reverse Flye","Cable Rear Delt Crossover Flye"],"10 reps @ 8 RPE",3,90,"Rest 60-120s, then return to B1."),
+          ex("Barbell Back Squat / DB Goblet Squat","Squat",[opt("Barbell Back Squat"),opt("Dumbbell Goblet Squat","No barbell or squat rack? Use this instead.")],"8 reps @ 6-7 RPE",4,90,"High or low bar. Superset with B2."),
+          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",[opt("2DB Bent Over Reverse Flye"),opt("Cable Rear Delt Crossover Flye","Have a cable machine? You can opt for this instead.")],"10 reps @ 8 RPE",3,90,"Rest 60-120s, then return to B1."),
         ]},
         { label:"C1 · Single-Leg Knee Dominant ↔ C2 · Pushing (superset)", exercises:[
-          ex("Goblet Reverse Lunge / Deficit Reverse Lunge","Single-Leg",["Goblet Reverse Lunge","Goblet Deficit Reverse Lunge (2-4\" elevation)"],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("2DB Alt. Incline Bench Press / Seesaw OH Press","Pushing",["2DB Alternating Incline Bench Press","2DB Seated Seesaw Overhead Press"],"8 reps/side @ 7-8 RPE",3,60,"Return to C1."),
+          ex("Goblet Reverse Lunge / Deficit Reverse Lunge","Single-Leg",[opt("Goblet Reverse Lunge"),opt("Goblet Deficit Reverse Lunge (2-4\" elevation)","Same move with a 2-4\" elevation for more range of motion.")],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("2DB Alt. Incline Bench Press / Seesaw OH Press","Pushing",[opt("2DB Alternating Incline Bench Press"),opt("2DB Seated Seesaw Overhead Press","No incline bench? Use this instead.")],"8 reps/side @ 7-8 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Hamstrings ↔ D2 · Core Flexion (superset)", exercises:[
           ex("Stability Ball Hamstring Curl Series","Hamstrings",null,"10-12 reps @ 8-9 RPE",3,90,"Superset with D2."),
@@ -1240,11 +1258,11 @@ const PLANS = {
           ex("Plyo Pushup","Power",null,"5 reps",3,50,"Explosive off the ground."),
         ]},
         { label:"B1 · Bench Press ↔ B2 · Single-Leg Hip Dominant (superset)", exercises:[
-          ex("Barbell Bench Press / 2DB Bench Press","Bench",["Barbell Bench Press","2DB Bench Press"],"8 reps @ 6-7 RPE",4,60,"Superset with B2."),
-          ex("1DB RFE SL Deadlift / Staggered Stance RDL","Single-Leg",["1DB Suitcase RFE SL Deadlift","1DB Suitcase Staggered Stance RDL"],"8 reps/side @ 7-8 RPE",3,60,"Return to B1."),
+          ex("Barbell Bench Press / 2DB Bench Press","Bench",[opt("Barbell Bench Press"),opt("2DB Bench Press","No barbell or bench setup? Use this instead.")],"8 reps @ 6-7 RPE",4,60,"Superset with B2."),
+          ex("1DB RFE SL Deadlift / Staggered Stance RDL","Single-Leg",[opt("1DB Suitcase RFE SL Deadlift"),opt("1DB Suitcase Staggered Stance RDL","Balance too challenging on the rear-foot-elevated version? Use this instead.")],"8 reps/side @ 7-8 RPE",3,60,"Return to B1."),
         ]},
         { label:"C1 · Overhead Press ↔ C2 · Row (superset)", exercises:[
-          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",["1/2 Kneeling Single Arm Overhead Press","Standing Single Arm DB Overhead Press"],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
+          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",[opt("1/2 Kneeling Single Arm Overhead Press"),opt("Standing Single Arm DB Overhead Press","Kneeling bothers your knees? Use this instead.")],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
           ex("DB 3-Point Row","Row",null,"10 reps/side @ 7 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Delts ↔ D2 · Arms (superset)", exercises:[
@@ -1257,15 +1275,15 @@ const PLANS = {
       ]},
       { id:"t3", label:"Day 3", name:"Deadlift Focus", sub:"Balanced emphasis", warmup:3, blocks:[
         { label:"A · Power", exercises:[
-          ex("Kettlebell Swing / Broad Jumps","Power",["Kettlebell Swing","Broad Jumps"],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
+          ex("Kettlebell Swing / Broad Jumps","Power",[opt("Kettlebell Swing"),opt("Broad Jumps","Prefer a jumping power variation? Use this instead.")],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
         ]},
         { label:"B1 · Deadlift ↔ B2 · Pushup (superset)", exercises:[
-          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",["Barbell Deadlift","Trap Bar or Kettlebell Deadlift"],"5 reps @ 7 RPE",4,90,"Superset with B2."),
+          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",[opt("Barbell Deadlift"),opt("Trap Bar or Kettlebell Deadlift")],"5 reps @ 7 RPE",4,90,"Superset with B2."),
           ex("Pushup Series","Pushup",null,"8 reps (pick your variation)",4,60,"Return to B1."),
         ]},
         { label:"C1 · Multi-Planar ↔ C2 · Pulling (superset)", exercises:[
           ex("Goblet Lateral Lunge","Multi-Planar",null,"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",["Band Assisted Pull Up (AMRAP)","Pull Up (AMRAP)","Lat Pulldown Machine (10 @ 8 RPE)"],"AMRAP or 10 reps",3,60,"Return to C1."),
+          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",[opt("Band Assisted Pull Up (AMRAP)"),opt("Pull Up (AMRAP)"),opt("Lat Pulldown Machine (10 @ 8 RPE)")],"AMRAP or 10 reps",3,60,"Return to C1."),
         ]},
         { label:"D1 · Quads ↔ D2 · Anti-Rotation (superset)", exercises:[
           ex("Goblet Cyclist Squat","Quads",null,"15 reps @ 6-7 RPE",3,90,"Superset with D2."),
@@ -1283,15 +1301,15 @@ const PLANS = {
     days: [
       { id:"u1", label:"Day 1", name:"Lower Body", sub:"Squat pattern", warmup:1, blocks:[
         { label:"A · Power", exercises:[
-          ex("Box Jumps / Squat Jumps","Power",["Box Jumps","Squat Jumps (no box)"],"5 reps",3,30,"Explosive — reset between reps."),
+          ex("Box Jumps / Squat Jumps","Power",[opt("Box Jumps"),opt("Squat Jumps (no box)","No elevated surface to jump onto? Use this instead.")],"5 reps",3,30,"Explosive — reset between reps."),
         ]},
         { label:"B1 · Squat ↔ B2 · Abductors (superset)", exercises:[
-          ex("Barbell Back Squat / DB Goblet Squat","Squat",["Barbell Back Squat","Dumbbell Goblet Squat"],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
-          ex("Copenhagen Plank (Short/Long Lever)","Abductors",["Short Lever","Long Lever (more stress)"],"15-30s/side @ 7-8 RPE",3,90,"Return to B1."),
+          ex("Barbell Back Squat / DB Goblet Squat","Squat",[opt("Barbell Back Squat"),opt("Dumbbell Goblet Squat","No barbell or squat rack? Use this instead.")],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
+          ex("Copenhagen Plank (Short/Long Lever)","Abductors",[opt("Short Lever"),opt("Long Lever (more stress)","More stress on the adductor — a harder progression.")],"15-30s/side @ 7-8 RPE",3,90,"Return to B1."),
         ]},
         { label:"C1 · Single-Leg Knee Dominant ↔ C2 · Hinge (superset)", exercises:[
-          ex("2DB RFE Split Squat / 2DB Split Squat","Single-Leg",["2DB Rear Foot Elevated Split Squat","2DB Split Squat"],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("BB Hip Thrust / BB Romanian Deadlift","Hinge",["BB Hip Thrust","BB Romanian Deadlift"],"10 or 8 reps @ 8 RPE",3,60,"Return to C1."),
+          ex("2DB RFE Split Squat / 2DB Split Squat","Single-Leg",[opt("2DB Rear Foot Elevated Split Squat"),opt("2DB Split Squat","Rear-foot-elevated version too hard on balance? Use this instead.")],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("BB Hip Thrust / BB Romanian Deadlift","Hinge",[opt("BB Hip Thrust"),opt("BB Romanian Deadlift","Hip thrust set-up too cumbersome? Use this instead.")],"10 or 8 reps @ 8 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Hamstrings ↔ D2 · Core Flexion (superset)", exercises:[
           ex("Stability Ball Hamstring Curl Series","Hamstrings",null,"10-12 reps @ 8-9 RPE",3,60,"Superset with D2."),
@@ -1306,11 +1324,11 @@ const PLANS = {
           ex("Plyo Pushup","Power",null,"5 reps",3,50,"Explosive off the ground."),
         ]},
         { label:"B1 · Bench Press ↔ B2 · Rear Delts (superset)", exercises:[
-          ex("Barbell Bench Press / 2DB Bench Press","Bench",["Barbell Bench Press","2DB Bench Press"],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
-          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",["2DB Bent Over Reverse Flye","Cable Rear Delt Crossover Flye"],"10 reps @ 8 RPE",3,90,"Return to B1."),
+          ex("Barbell Bench Press / 2DB Bench Press","Bench",[opt("Barbell Bench Press"),opt("2DB Bench Press","No barbell or bench setup? Use this instead.")],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
+          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",[opt("2DB Bent Over Reverse Flye"),opt("Cable Rear Delt Crossover Flye","Have a cable machine? You can opt for this instead.")],"10 reps @ 8 RPE",3,90,"Return to B1."),
         ]},
         { label:"C1 · Overhead Press ↔ C2 · Row (superset)", exercises:[
-          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",["1/2 Kneeling Single Arm Overhead Press","Standing Single Arm DB Overhead Press"],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
+          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",[opt("1/2 Kneeling Single Arm Overhead Press"),opt("Standing Single Arm DB Overhead Press","Kneeling bothers your knees? Use this instead.")],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
           ex("DB 3-Point Row","Row",null,"10 reps/side @ 7 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Delts ↔ D2 · Arms (superset)", exercises:[
@@ -1323,15 +1341,15 @@ const PLANS = {
       ]},
       { id:"u3", label:"Day 3", name:"Lower Body", sub:"Deadlift pattern", warmup:3, blocks:[
         { label:"A · Power", exercises:[
-          ex("Kettlebell Swing / Broad Jumps","Power",["Kettlebell Swing","Broad Jumps"],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
+          ex("Kettlebell Swing / Broad Jumps","Power",[opt("Kettlebell Swing"),opt("Broad Jumps","Prefer a jumping power variation? Use this instead.")],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
         ]},
         { label:"B1 · Deadlift ↔ B2 · Calves (superset)", exercises:[
-          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",["Barbell Deadlift","Trap Bar or Kettlebell Deadlift"],"5 reps @ 7 RPE",4,90,"Superset with B2."),
-          ex("Single Leg Calf Raise off Plate (± weighted)","Calves",["Bodyweight","Weighted"],"10-12 reps/side @ 8-9 RPE",3,60,"Return to B1."),
+          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",[opt("Barbell Deadlift"),opt("Trap Bar or Kettlebell Deadlift")],"5 reps @ 7 RPE",4,90,"Superset with B2."),
+          ex("Single Leg Calf Raise off Bumper Plate (± weighted)","Calves",[opt("Single Leg Calf Raise off Bumper Plate"),opt("Weighted Single Leg Calf Raise off Bumper Plate","Want more challenge? Add weight.")],"10-12 reps/side @ 8-9 RPE",3,60,"Return to B1."),
         ]},
         { label:"C1 · Multi-Planar ↔ C2 · Hinge (superset)", exercises:[
           ex("Goblet Lateral Lunge","Multi-Planar",null,"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("2DB Romanian Deadlift / 2DB Single Leg Deadlift","Hinge",["2DB Romanian Deadlift (10 reps)","2DB Single Leg Deadlift (8 reps/side — double volume)"],"10 reps or 8/side @ 8 RPE",3,60,"Return to C1."),
+          ex("2DB Romanian Deadlift / 2DB Single Leg Deadlift","Hinge",[opt("2DB Romanian Deadlift (10 reps)"),opt("2DB Single Leg Deadlift (8 reps/side — double volume)","Have the time and energy? This doubles the reps (per side) for more work.")],"10 reps or 8/side @ 8 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Quads ↔ D2 · Anti-Rotation (superset)", exercises:[
           ex("Goblet Cyclist Squat","Quads",null,"15 reps @ 6-7 RPE",3,60,"Superset with D2."),
@@ -1343,19 +1361,19 @@ const PLANS = {
       ]},
       { id:"u4", label:"Day 4", name:"Upper Body", sub:"Pull pattern", warmup:4, blocks:[
         { label:"A · Power", exercises:[
-          ex("Single Arm DB Push Press / Medicine Ball Slam","Power",["Single Arm DB Push Press","Medicine Ball Floor Slam"],"5 reps/side or 8 reps @ 5-6 RPE",3,45,"Light and powerful."),
+          ex("Single Arm DB Push Press / Medicine Ball Slam","Power",[opt("Single Arm DB Push Press"),opt("Medicine Ball Floor Slam","Have a soft medicine ball? Use this instead.")],"5 reps/side or 8 reps @ 5-6 RPE",3,45,"Light and powerful."),
         ]},
         { label:"B1 · Pulling ↔ B2 · Pressing (superset)", exercises:[
-          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",["Band Assisted Pull Up (AMRAP)","Pull Up (AMRAP)","Lat Pulldown Machine (10 @ 8 RPE)"],"AMRAP or 10 reps",4,90,"Superset with B2."),
+          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",[opt("Band Assisted Pull Up (AMRAP)"),opt("Pull Up (AMRAP)"),opt("Lat Pulldown Machine (10 @ 8 RPE)")],"AMRAP or 10 reps",4,90,"Superset with B2."),
           ex("2DB Incline Bench Press","Pressing",null,"8 reps @ 7-8 RPE",4,60,"Return to B1."),
         ]},
         { label:"C1 · Hinge (Row) ↔ C2 · Pushup (superset)", exercises:[
-          ex("Seated Cable Row / 2DB Bent Over Row","Row",["Seated Cable Row (12 @ 8-9 RPE)","2DB Bent Over Row (10 @ 8 RPE)"],"10-12 reps",3,60,"Superset with C2."),
+          ex("Seated Cable Row / 2DB Bent Over Row","Row",[opt("Seated Cable Row (12 @ 8-9 RPE)"),opt("2DB Bent Over Row (10 @ 8 RPE)","No cable or band setup? Use this instead.")],"10-12 reps",3,60,"Superset with C2."),
           ex("Pushup Series","Pushup",null,"8 reps (pick your variation)",3,60,"Return to C1."),
         ]},
         { label:"D1 · Delts ↔ D2 · Triceps (superset)", exercises:[
           ex("2DB Front Raise","Delts",null,"12 reps @ 8-9 RPE",3,60,"Superset with D2."),
-          ex("2DB Lying Triceps Ext. / Band Low OH Triceps Ext.","Triceps",["2DB Lying Triceps Extensions","Band/Cable Low Overhead Triceps Extension"],"12 reps @ 8-9 RPE",3,60,"Return to D1."),
+          ex("2DB Lying Triceps Ext. / Band Low OH Triceps Ext.","Triceps",[opt("2DB Lying Triceps Extensions"),opt("Band/Cable Low Overhead Triceps Extension","Have a band or cable setup? Use this instead.")],"12 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
           ex("2KB/2DB Thruster","Finisher",null,"20 seconds",4,20,"Then Front Plank 20s, then rest 20s. Repeat 4 rounds."),
@@ -1649,8 +1667,16 @@ function renderBlock(){
     if(exc.options){
       const chosen = state.optionChoice[id] || 0;
       optHtml = `<div class="option-toggle">` + exc.options.map((o,oi)=>
-        `<button class="${oi===chosen?'active':''}" onclick="chooseOption('${id}',${oi})">${o.split('(')[0].trim()}</button>`
+        `<button class="${oi===chosen?'active':''}" onclick="chooseOption('${id}',${oi})">${o.l.split('(')[0].trim()}</button>`
       ).join('') + `</div>`;
+      // Why you'd pick the currently-selected alternative — straight from
+      // the source PDF's own "choose this option if..." guidance. Only
+      // shown when this specific option has one (the default/first option
+      // in a pair usually doesn't need a reason to pick it).
+      const chosenWhy = exc.options[chosen].w;
+      if(chosenWhy){
+        optHtml += `<div class="option-why"><b>Why this one:</b> ${chosenWhy}</div>`;
+      }
     }
 
     const setsWrap = document.createElement('div');
@@ -1674,7 +1700,7 @@ function renderBlock(){
     // otherwise the exercise's own name, matched against the hardcoded VIDEO_MAP
     // pulled directly from the source PDF's own hyperlinks.
     const chosenIdx = state.optionChoice[id] || 0;
-    const searchName = exc.options ? exc.options[chosenIdx].split('(')[0].trim() : exc.name.split('/')[0].trim();
+    const searchName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name.split('/')[0].trim();
     const videoId = lookupVideo(searchName) || lookupVideo(exc.name);
     const thumbId = `thumb_${id}`;
 
@@ -1782,6 +1808,7 @@ const VIDEO_MAP = {
   "Barbell Bench Press": "pvtmDcyG3Jk",
   "2DB Bench Press": "bZvwg5jmx10",
   "1DB Suitcase Rear Foot Elevated SL Deadlift": "DCU80Fwz2N4",
+  "1DB Suitcase RFE SL Deadlift": "DCU80Fwz2N4",
   "1DB Suitcase Staggered Stance RDL": "skVF1dhz2jQ",
   "1/2 Kneeling Single Arm Overhead Press": "4kxlfEGuwoM",
   "Standing Single Arm DB Overhead Press": "TZiiRF6XiQ4",
@@ -1793,6 +1820,7 @@ const VIDEO_MAP = {
   "Barbell Deadlift": "lvbdWmGP7I0",
   "Trap Bar Deadlift": "iRapUCokBrc",
   "Kettlebell Deadlift": "gm7ZdrvoSFo",
+  "Trap Bar or Kettlebell Deadlift": "iRapUCokBrc",
   "Pushup Series": "2FUzDiFXNmc",
   "Goblet Lateral Lunge": "NSt1SeWPWhc",
   "Band Assisted Pull Up": "LWSSa1SPges",
@@ -1902,7 +1930,7 @@ function finishWorkout(){
       // Record which option was selected (e.g. "Squat Jumps" vs "Box Jumps")
       // so the saved history reflects what was actually performed.
       const chosenIdx = state.optionChoice[id] || 0;
-      const performedName = exc.options ? exc.options[chosenIdx].split('(')[0].trim() : exc.name;
+      const performedName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
 
       exerciseDetails.push({
         name: performedName,

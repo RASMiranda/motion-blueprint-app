@@ -94,6 +94,33 @@ test.describe('Motion Blueprint', () => {
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
+  test('exercise alternatives show a "why pick this" hint from the source program', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Block A (Power Development) has no alternatives with a "why" — only
+    // block B (Squat Variations / Rear Delts) does. Advance one block.
+    await page.locator('#workout-next').click();
+
+    const squatCard = page.locator('.exercise-card').first();
+    await expect(squatCard.locator('.option-toggle button').first()).toContainText('Barbell Back Squat');
+
+    // Default option (Barbell Back Squat) has no stated reason to pick it
+    // over the alternative — no hint shown.
+    await expect(squatCard.locator('.option-why')).toHaveCount(0);
+
+    // Selecting the alternative (Dumbbell Goblet Squat) reveals why you'd
+    // pick it, straight from the source program.
+    await squatCard.locator('.option-toggle button', { hasText: 'Dumbbell Goblet Squat' }).click();
+    await expect(squatCard.locator('.option-why')).toContainText('No barbell or squat rack');
+
+    // Switching back hides it again.
+    await squatCard.locator('.option-toggle button', { hasText: 'Barbell Back Squat' }).click();
+    await expect(squatCard.locator('.option-why')).toHaveCount(0);
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);
