@@ -186,6 +186,24 @@ test.describe('Motion Blueprint', () => {
     await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=gr7TjKm0wCw');
   });
 
+  test('Day 4 warm-up Prehab step describes its own exercise, not a calf raise', async ({ page }) => {
+    // Regression test: the source PDF itself pairs "Seated Wall Slide"
+    // (a shoulder-mobility drill) with a description copy-pasted from
+    // Day 1's "Leaning Wall Calf Raises" ("Builds calf strength and
+    // ankle mobility") — wrong for this exercise even though it's an
+    // error in the original material.
+    await gotoAndSettle(page);
+    await page.locator('button.tab-btn[data-tab="screen-warmup-select"]').click();
+    await page.locator('#warmup-day-list .day-card').nth(3).click();
+    await expect(page.locator('#screen-warmup-detail')).toBeVisible();
+
+    const group = page.locator('#warmup-detail-steps .wstep-superset-group');
+    const prehabStep = group.locator('.warmup-step').first();
+    await expect(prehabStep.locator('.t')).toContainText('Seated Wall Slide');
+    await expect(prehabStep.locator('.d')).toContainText('shoulder mobility');
+    await expect(prehabStep.locator('.d')).not.toContainText('calf');
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);
