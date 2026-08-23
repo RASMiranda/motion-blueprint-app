@@ -1705,6 +1705,18 @@ function renderBlock(){
 
   block.exercises.forEach((exc, ei) => {
     const id = exId(day.id, state.blockIndex, ei);
+    // Self-heal missing set logs: startWorkout() initializes one per
+    // exercise up front, but a workout resumed from a saved state (the
+    // Home screen's "in progress" banner, or state loaded on page load)
+    // skips straight to renderBlock() and never runs that init. If the
+    // exercise data changed since the session was saved — e.g. a finisher
+    // block gaining a second exercise in an app update — an id from a
+    // newer PLANS definition can have no matching log yet. Without this,
+    // reading state.setLog[id] below throws and resumeWorkout() silently
+    // fails to switch screens, leaving the tap looking like it did nothing.
+    if(!state.setLog[id]){
+      state.setLog[id] = Array.from({length: exc.sets}, () => ({weight:'', reps:'', rpe:'', checked:false}));
+    }
     const card = document.createElement('div');
     card.className = 'exercise-card';
 
@@ -1982,6 +1994,12 @@ function finishWorkout(){
   day.blocks.forEach((block, bi) => {
     block.exercises.forEach((exc, ei) => {
       const id = exId(day.id, bi, ei);
+      // Same self-heal as renderBlock(): a resumed session saved before
+      // a PLANS change (e.g. a block gaining an exercise) may have no log
+      // for this id yet.
+      if(!state.setLog[id]){
+        state.setLog[id] = Array.from({length: exc.sets}, () => ({weight:'', reps:'', rpe:'', checked:false}));
+      }
       const log = state.setLog[id];
       totalSets += log.length;
       doneSets += log.filter(s => s.checked).length;
