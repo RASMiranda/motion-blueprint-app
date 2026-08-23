@@ -1742,8 +1742,17 @@ function renderBlock(){
     // otherwise the exercise's own name, matched against the hardcoded VIDEO_MAP
     // pulled directly from the source PDF's own hyperlinks.
     const chosenIdx = state.optionChoice[id] || 0;
-    const searchName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name.split('/')[0].trim();
-    const videoId = lookupVideo(searchName) || lookupVideo(exc.name);
+    const searchName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
+    // Try the full name first — several no-option exercises have a "/" as
+    // part of their own compound name (e.g. "2KB/2DB Thruster", "2KB/2DB
+    // Farmer Carry"), and VIDEO_MAP has an exact entry for the full name.
+    // Only fall back to the pre-slash prefix for the rare case with no
+    // single VIDEO_MAP entry of its own (e.g. "KB/DB Chain: Clean → ..."
+    // falls back to "KB", partial-matching the "KB Chain" demo). Trying
+    // the shortened prefix *first* was the bug: "2KB/2DB Thruster" cut
+    // down to "2KB" partial-matched the earlier "2KB/2DB Farmer Carry"
+    // entry instead of its own exact video.
+    const videoId = lookupVideo(searchName) || lookupVideo(exc.name.split('/')[0].trim());
 
     const mediaRow = document.createElement('div');
     mediaRow.className = 'ex-media';

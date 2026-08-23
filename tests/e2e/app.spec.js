@@ -162,6 +162,30 @@ test.describe('Motion Blueprint', () => {
     await expect(group.locator('.warmup-step').nth(1).locator('.t')).toContainText('Bench Reverse Plank Hip Flexor Raises');
   });
 
+  test('Day 4 Upper Body finisher shows its own video, not the Day 1 Farmer Carry one', async ({ page }) => {
+    // Regression test: exercises without swap options used to have their
+    // name truncated at the first "/" before the video lookup (e.g.
+    // "2KB/2DB Thruster" -> "2KB"), which partial-matched whichever
+    // VIDEO_MAP entry starting with "2KB" happened to come first —
+    // "2KB/2DB Farmer Carry" — instead of the Thruster's own video.
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Upper / Lower Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').nth(3).click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Blocks: A (Power), B1/B2, C1/C2, D1/D2, E (Finisher) — 4 clicks to
+    // reach the finisher block.
+    for (let i = 0; i < 4; i++) {
+      await page.locator('#workout-next').click();
+    }
+
+    const finisherCard = page.locator('.exercise-card').first();
+    await expect(finisherCard.locator('.ex-name')).toContainText('Thruster');
+
+    const link = finisherCard.locator('.ex-video-btn');
+    await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=gr7TjKm0wCw');
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);
