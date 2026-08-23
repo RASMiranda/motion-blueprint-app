@@ -69,8 +69,11 @@ test.describe('Motion Blueprint', () => {
     await gotoAndSettle(page);
     const banner = page.locator('#install-banner');
     await expect(banner).toBeVisible();
-    await expect(banner).toContainText('Get the app');
+    // Banner copy now focuses on address-bar hiding as the install benefit
+    await expect(banner).toContainText('Hide the address bar');
 
+    // In a desktop test environment beforeinstallprompt never fires,
+    // so the link keeps its APK href fallback.
     const link = page.locator('#install-banner-link');
     await expect(link).toHaveAttribute('href', /^https:\/\/github\.com\/RASMiranda\/motion-blueprint-app\/releases\/download\/.+\/Motion\.apk$/);
     await expect(link).toHaveAttribute('target', '_blank');
