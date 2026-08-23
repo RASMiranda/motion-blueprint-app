@@ -162,12 +162,17 @@ test.describe('Motion Blueprint', () => {
     await expect(group.locator('.warmup-step').nth(1).locator('.t')).toContainText('Bench Reverse Plank Hip Flexor Raises');
   });
 
-  test('Day 4 Upper Body finisher shows its own video, not the Day 1 Farmer Carry one', async ({ page }) => {
+  test('Day 4 Upper Body finisher shows a video for each circuit exercise', async ({ page }) => {
     // Regression test: exercises without swap options used to have their
     // name truncated at the first "/" before the video lookup (e.g.
     // "2KB/2DB Thruster" -> "2KB"), which partial-matched whichever
     // VIDEO_MAP entry starting with "2KB" happened to come first —
     // "2KB/2DB Farmer Carry" — instead of the Thruster's own video.
+    //
+    // The finisher is also a circuit of two distinct exercises (Thruster,
+    // then Front Plank), each with its own demo video in the source PDF —
+    // previously only the first ever got its own card/video; the second
+    // was just plain text in the first exercise's note.
     await gotoAndSettle(page);
     await page.locator('.plan-card', { hasText: 'Upper / Lower Blueprint' }).click();
     await page.locator('#daylist-items .day-card').nth(3).click();
@@ -179,11 +184,36 @@ test.describe('Motion Blueprint', () => {
       await page.locator('#workout-next').click();
     }
 
-    const finisherCard = page.locator('.exercise-card').first();
-    await expect(finisherCard.locator('.ex-name')).toContainText('Thruster');
+    const cards = page.locator('.exercise-card');
+    await expect(cards).toHaveCount(2);
 
-    const link = finisherCard.locator('.ex-video-btn');
-    await expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=gr7TjKm0wCw');
+    await expect(cards.nth(0).locator('.ex-name')).toContainText('Thruster');
+    await expect(cards.nth(0).locator('.ex-video-btn')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=gr7TjKm0wCw');
+
+    await expect(cards.nth(1).locator('.ex-name')).toContainText('Front Plank');
+    await expect(cards.nth(1).locator('.ex-video-btn')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=B4_gxkICr5M');
+  });
+
+  test('Day 1 finisher shows a video for each circuit exercise (Farmer Carry + Plank Drag)', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Blocks: A (Power), B1/B2, C1/C2, D1/D2, E (Finisher) — 4 clicks to
+    // reach the finisher block.
+    for (let i = 0; i < 4; i++) {
+      await page.locator('#workout-next').click();
+    }
+
+    const cards = page.locator('.exercise-card');
+    await expect(cards).toHaveCount(2);
+
+    await expect(cards.nth(0).locator('.ex-name')).toContainText('Farmer Carry');
+    await expect(cards.nth(0).locator('.ex-video-btn')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=zwoxFpyMuig');
+
+    await expect(cards.nth(1).locator('.ex-name')).toContainText('Tall Plank KB/DB Drag');
+    await expect(cards.nth(1).locator('.ex-video-btn')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dzsJUXOhIzo');
   });
 
   test('Day 4 warm-up Prehab step describes its own exercise, not a calf raise', async ({ page }) => {
