@@ -216,6 +216,37 @@ test.describe('Motion Blueprint', () => {
     await expect(cards.nth(1).locator('.ex-video-btn')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dzsJUXOhIzo');
   });
 
+  test('Day 1 finisher only shows a rest timer after the second circuit exercise', async ({ page }) => {
+    // Regression test: the source PDF lists this finisher as three
+    // distinct numbered steps — 01 Farmer Carry, 02 Tall Plank KB/DB
+    // Drag, 03 Rest — meaning the *one* rest happens only after both
+    // exercises, not after each. The first exercise used to carry its
+    // own "Start Rest Timer · 30s" button (and note text saying "then
+    // rest 30s") as if a rest also happened right after it, which
+    // doesn't match the real circuit and would have you resting twice
+    // as long as intended.
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    for (let i = 0; i < 4; i++) {
+      await page.locator('#workout-next').click();
+    }
+
+    const cards = page.locator('.exercise-card');
+    await expect(cards).toHaveCount(2);
+
+    const farmerCarry = cards.nth(0);
+    await expect(farmerCarry.locator('.ex-name')).toContainText('Farmer Carry');
+    await expect(farmerCarry.locator('.ex-note')).toContainText('no rest in between');
+    await expect(farmerCarry.locator('.rest-btn')).toHaveCount(0);
+
+    const plankDrag = cards.nth(1);
+    await expect(plankDrag.locator('.ex-name')).toContainText('Tall Plank KB/DB Drag');
+    await expect(plankDrag.locator('.rest-btn')).toContainText('Start Rest Timer · 30s');
+  });
+
   test('resuming an in-progress workout self-heals a set log missing for a newer exercise', async ({ page }) => {
     // Regression test: renderBlock() and finishWorkout() used to assume
     // state.setLog already had an entry for every exercise id, which
