@@ -138,6 +138,30 @@ test.describe('Motion Blueprint', () => {
     await expect(link).toHaveAttribute('target', '_blank');
   });
 
+  test('warm-up Prehab and Core steps are grouped as a superset', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('button.tab-btn[data-tab="screen-warmup-select"]').click();
+    await page.locator('#warmup-day-list .day-card').first().click();
+    await expect(page.locator('#screen-warmup-detail')).toBeVisible();
+
+    // Steps 1-4 (Breathing, Lower Body, Upper Body, Total Body) are plain,
+    // sequential steps — not part of any superset group.
+    const steps = page.locator('#warmup-detail-steps > .warmup-step');
+    await expect(steps).toHaveCount(4);
+
+    // Steps 5 and 6 (Prehab, Core) are always performed back-to-back — the
+    // program pairs them as a superset — and should render inside one
+    // labeled group instead of as flat, separate rows. Day 1's pair is
+    // Leaning Wall Calf Raises (Prehab) + Bench Reverse Plank Hip Flexor
+    // Raises (Core).
+    const group = page.locator('#warmup-detail-steps .wstep-superset-group');
+    await expect(group).toBeVisible();
+    await expect(group.locator('.wstep-superset-label')).toContainText('Superset');
+    await expect(group.locator('.warmup-step')).toHaveCount(2);
+    await expect(group.locator('.warmup-step').nth(0).locator('.t')).toContainText('Leaning Wall Calf Raises');
+    await expect(group.locator('.warmup-step').nth(1).locator('.t')).toContainText('Bench Reverse Plank Hip Flexor Raises');
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);

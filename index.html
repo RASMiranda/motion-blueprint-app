@@ -868,6 +868,29 @@
   }
   .wstep-check.checked { background: var(--green); border-color: var(--green); }
 
+  /* Prehab + Core are always performed back-to-back as a superset — group
+     them visually the same way the main workout's superset blocks read. */
+  .wstep-superset-group {
+    border: 1px dashed rgba(59,111,240,0.35);
+    border-radius: 14px;
+    padding: 0 14px;
+    margin: 4px 0;
+    background: rgba(59,111,240,0.04);
+  }
+  .wstep-superset-group .warmup-step:first-child { border-top: none; }
+  .wstep-superset-label {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 7px;
+    margin-top: 14px;
+  }
+
   /* ---------- Finisher / complete ---------- */
   .complete-wrap {
     text-align: center;
@@ -1585,11 +1608,20 @@ function renderWarmupSelect(){
   });
 }
 
+// Steps 5 (Prehab) and 6 (Core) are always performed as a superset in this
+// program — back-to-back with minimal rest, same as the "superset" blocks
+// in the main workout screen — every day's step 5 description says as much
+// ("Superset with the core move below"). That pairing was only ever prose
+// buried in step 5's own text; this groups the two rows visually so it
+// reads the same way the main workout's superset blocks do.
+const WARMUP_SUPERSET_FROM = 4; // 0-indexed: Prehab is index 4, Core is 5
+
 function openWarmupDetail(n){
   const w = WARMUPS[n];
   document.getElementById('warmup-detail-eyebrow').textContent = `DAY ${n} · ${w.focus.toUpperCase()}`;
   const wrap = document.getElementById('warmup-detail-steps');
   wrap.innerHTML = '';
+  let target = wrap;
   w.steps.forEach((s, i) => {
     const videoId = lookupVideo(s.t);
     const row = document.createElement('div');
@@ -1604,7 +1636,14 @@ function openWarmupDetail(n){
       </div>
       <button class="wstep-check" onclick="this.classList.toggle('checked')"></button>
     `;
-    wrap.appendChild(row);
+
+    if(i === WARMUP_SUPERSET_FROM){
+      target = document.createElement('div');
+      target.className = 'wstep-superset-group';
+      target.innerHTML = `<div class="wstep-superset-label">Superset</div>`;
+      wrap.appendChild(target);
+    }
+    target.appendChild(row);
   });
   showScreen('screen-warmup-detail');
 }
