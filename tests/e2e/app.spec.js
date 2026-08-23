@@ -47,6 +47,24 @@ test.describe('Motion Blueprint', () => {
     await expect(page.locator('.plan-card', { hasText: 'Upper / Lower Blueprint' })).toBeVisible();
   });
 
+  test('day-select cards stay a consistent width regardless of title length', async ({ page }) => {
+    // Regression test: .day-card is a <button> with display:flex but no
+    // explicit width, so it used to shrink-wrap to its own title text —
+    // "Day 1 — Squat Focus" (short) rendered visibly narrower than
+    // "Day 2 — Bench Press Focus" (longer). The 4-Day plan's day list
+    // looked fine only by coincidence (its titles are all similar length).
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await expect(page.locator('#screen-daylist')).toBeVisible();
+
+    const cards = page.locator('#daylist-items .day-card');
+    await expect(cards).toHaveCount(3);
+    const widths = await cards.evaluateAll(els => els.map(el => el.getBoundingClientRect().width));
+    expect(widths[0]).toBeGreaterThan(0);
+    expect(widths[1]).toBeCloseTo(widths[0], 0);
+    expect(widths[2]).toBeCloseTo(widths[0], 0);
+  });
+
   test('shows an install-the-app banner with a working APK link when run as a browser tab', async ({ page }) => {
     await gotoAndSettle(page);
     const banner = page.locator('#install-banner');
