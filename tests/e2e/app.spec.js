@@ -121,6 +121,23 @@ test.describe('Motion Blueprint', () => {
     await expect(squatCard.locator('.option-why')).toHaveCount(0);
   });
 
+  test('warm-up steps show a video preview and demo link', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('button.tab-btn[data-tab="screen-warmup-select"]').click();
+    await expect(page.locator('#screen-warmup-select')).toBeVisible();
+
+    await page.locator('#warmup-day-list .day-card').first().click();
+    await expect(page.locator('#screen-warmup-detail')).toBeVisible();
+
+    const firstStep = page.locator('.warmup-step').first();
+    await expect(firstStep.locator('.t')).toContainText('Hooklying Breathing');
+
+    const link = firstStep.locator('.ex-video-btn');
+    await expect(link).toContainText('Watch demo');
+    await expect(link).toHaveAttribute('href', /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]+$/);
+    await expect(link).toHaveAttribute('target', '_blank');
+  });
+
   test('logging a workout adds it to Progress', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);

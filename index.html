@@ -594,6 +594,7 @@
     gap: 10px;
     margin-bottom: 14px;
   }
+  .wstep-media { margin-top: 10px; margin-bottom: 0; }
   .ex-thumb {
     width: 84px;
     height: 84px;
@@ -1590,6 +1591,7 @@ function openWarmupDetail(n){
   const wrap = document.getElementById('warmup-detail-steps');
   wrap.innerHTML = '';
   w.steps.forEach((s, i) => {
+    const videoId = lookupVideo(s.t);
     const row = document.createElement('div');
     row.className = 'warmup-step';
     row.innerHTML = `
@@ -1598,6 +1600,7 @@ function openWarmupDetail(n){
         <div class="t">${s.t}</div>
         <div class="m">${s.m}</div>
         <div class="d">${s.d}</div>
+        <div class="ex-media wstep-media">${buildMediaRowHtml(s.t, videoId)}</div>
       </div>
       <button class="wstep-check" onclick="this.classList.toggle('checked')"></button>
     `;
@@ -1702,47 +1705,10 @@ function renderBlock(){
     const chosenIdx = state.optionChoice[id] || 0;
     const searchName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name.split('/')[0].trim();
     const videoId = lookupVideo(searchName) || lookupVideo(exc.name);
-    const thumbId = `thumb_${id}`;
 
     const mediaRow = document.createElement('div');
     mediaRow.className = 'ex-media';
-
-    if(videoId){
-      const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-      mediaRow.innerHTML = `
-        <a class="ex-thumb loaded" id="${thumbId}" href="${ytUrl}" target="_blank" rel="noopener">
-          <img src="${thumbUrl}" alt="${searchName}" loading="lazy" onerror="this.parentElement.classList.remove('loaded'); this.remove();">
-          <div class="ph-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-            <span>Preview</span>
-          </div>
-        </a>
-        <a class="ex-video-btn" href="${ytUrl}" target="_blank" rel="noopener">
-          <div class="play-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-          <div class="vb-text">
-            <div class="vt-main">Watch demo</div>
-            <div class="vt-sub">${searchName}</div>
-          </div>
-        </a>
-      `;
-    } else {
-      mediaRow.innerHTML = `
-        <div class="ex-thumb" id="${thumbId}">
-          <div class="ph-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-            <span>No preview</span>
-          </div>
-        </div>
-        <div class="ex-video-btn" style="opacity:0.5;">
-          <div class="play-icon" style="background:var(--line);"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-          <div class="vb-text">
-            <div class="vt-main">No demo linked</div>
-            <div class="vt-sub">${searchName}</div>
-          </div>
-        </div>
-      `;
-    }
+    mediaRow.innerHTML = buildMediaRowHtml(searchName, videoId);
 
     card.innerHTML = `
       <div class="ex-name">${exc.name}</div>
@@ -1851,6 +1817,7 @@ const VIDEO_MAP = {
   "2KB/2DB Thruster": "gr7TjKm0wCw",
   "Front Plank": "B4_gxkICr5M",
   "Leaning Wall Double Leg Calf Raises": "JWJP7mi1wJc",
+  "Leaning Wall Calf Raises": "JWJP7mi1wJc",
   "Leaning Wall Single Leg Calf Raises": "X2P2xiTxqFo"
 };
 
@@ -1875,6 +1842,47 @@ function lookupVideo(name){
     if(norm.startsWith(kn) || kn.startsWith(norm)) return VIDEO_MAP[k];
   }
   return null;
+}
+
+// Builds the video-preview row (thumbnail + "Watch demo" link, or a graceful
+// "no preview"/"no demo linked" fallback) shared by exercise cards and
+// warm-up steps alike — both are just a name + a resolved video id.
+function buildMediaRowHtml(displayName, videoId){
+  if(videoId){
+    const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    return `
+      <a class="ex-thumb loaded" href="${ytUrl}" target="_blank" rel="noopener">
+        <img src="${thumbUrl}" alt="${displayName}" loading="lazy" onerror="this.parentElement.classList.remove('loaded'); this.remove();">
+        <div class="ph-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Preview</span>
+        </div>
+      </a>
+      <a class="ex-video-btn" href="${ytUrl}" target="_blank" rel="noopener">
+        <div class="play-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="vb-text">
+          <div class="vt-main">Watch demo</div>
+          <div class="vt-sub">${displayName}</div>
+        </div>
+      </a>
+    `;
+  }
+  return `
+    <div class="ex-thumb">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span>No preview</span>
+      </div>
+    </div>
+    <div class="ex-video-btn" style="opacity:0.5;">
+      <div class="play-icon" style="background:var(--line);"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+      <div class="vb-text">
+        <div class="vt-main">No demo linked</div>
+        <div class="vt-sub">${displayName}</div>
+      </div>
+    </div>
+  `;
 }
 
 function chooseOption(id, idx){
