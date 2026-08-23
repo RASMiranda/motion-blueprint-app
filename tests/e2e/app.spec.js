@@ -239,7 +239,10 @@ test.describe('Motion Blueprint', () => {
 
     const farmerCarry = cards.nth(0);
     await expect(farmerCarry.locator('.ex-name')).toContainText('Farmer Carry');
-    await expect(farmerCarry.locator('.ex-note')).toContainText('no rest in between');
+    // No invented narration either — the PDF has no per-exercise
+    // description here, just a plain numbered list, so the app doesn't
+    // add one; the card order and the missing rest button say it all.
+    await expect(farmerCarry.locator('.ex-note')).toHaveCount(0);
     await expect(farmerCarry.locator('.rest-btn')).toHaveCount(0);
 
     const plankDrag = cards.nth(1);
