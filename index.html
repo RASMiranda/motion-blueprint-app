@@ -1274,8 +1274,8 @@ const PLANS = {
           ex("Tuck Up Series","Core",null,"8-10 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
-          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,0,"Then Tall Plank KB/DB Drag — no rest in between. Repeat 4 rounds total."),
-          ex("Tall Plank KB/DB Drag","Finisher",null,"30 seconds",4,30,"Then rest 30s, then return to Farmer Carry. Repeat 4 rounds total."),
+          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,0,""),
+          ex("Tall Plank KB/DB Drag","Finisher",null,"30 seconds",4,30,""),
         ]},
       ]},
       { id:"t2", label:"Day 2", name:"Bench Press Focus", sub:"Upper push & pull", warmup:2, blocks:[
@@ -1341,8 +1341,8 @@ const PLANS = {
           ex("Tuck Up Series","Core",null,"8-10 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
-          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,0,"Then Tall Plank KB/DB Drag — no rest in between."),
-          ex("Tall Plank KB/DB Drag","Finisher",null,"30 seconds",4,30,"Then rest 30s, then return to Farmer Carry."),
+          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,0,""),
+          ex("Tall Plank KB/DB Drag","Finisher",null,"30 seconds",4,30,""),
         ]},
       ]},
       { id:"u2", label:"Day 2", name:"Upper Body", sub:"Bench pattern", warmup:2, blocks:[
@@ -1402,8 +1402,8 @@ const PLANS = {
           ex("2DB Lying Triceps Ext. / Band Low OH Triceps Ext.","Triceps",[opt("2DB Lying Triceps Extensions"),opt("Band/Cable Low Overhead Triceps Extension","Have a band or cable setup? Use this instead.")],"12 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
-          ex("2KB/2DB Thruster","Finisher",null,"20 seconds",4,0,"Then Front Plank — no rest in between. Repeat 4 rounds."),
-          ex("Front Plank","Finisher",null,"20 seconds",4,20,"Then rest 20s, then return to Thruster. Repeat 4 rounds."),
+          ex("2KB/2DB Thruster","Finisher",null,"20 seconds",4,0,""),
+          ex("Front Plank","Finisher",null,"20 seconds",4,20,""),
         ]},
       ]},
     ]
@@ -1779,10 +1779,18 @@ function renderBlock(){
       ${optHtml}
     `;
     card.appendChild(mediaRow);
-    const noteEl = document.createElement('div');
-    noteEl.className = 'ex-note';
-    noteEl.textContent = exc.note;
-    card.appendChild(noteEl);
+    // Only some exercises have a genuine coaching note in the source PDF
+    // (e.g. "Choose this option if..."). Circuit exercises with no such
+    // text of their own used to get an invented sentence narrating the
+    // sequence — but the PDF itself has no description there, just a
+    // plain numbered list, and the card order plus the rest button's
+    // presence/absence already convey the same thing.
+    if(exc.note){
+      const noteEl = document.createElement('div');
+      noteEl.className = 'ex-note';
+      noteEl.textContent = exc.note;
+      card.appendChild(noteEl);
+    }
     card.appendChild(setsWrap);
 
     // Some circuit exercises (e.g. the first half of a finisher pair) have
