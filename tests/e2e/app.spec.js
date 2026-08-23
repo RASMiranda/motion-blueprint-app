@@ -216,6 +216,49 @@ test.describe('Motion Blueprint', () => {
     await expect(cards.nth(1).locator('.ex-video-btn')).toHaveAttribute('href', 'https://www.youtube.com/watch?v=dzsJUXOhIzo');
   });
 
+  test('resuming an in-progress workout self-heals a set log missing for a newer exercise', async ({ page }) => {
+    // Regression test: renderBlock() and finishWorkout() used to assume
+    // state.setLog already had an entry for every exercise id, which
+    // startWorkout() guarantees for a *freshly started* workout. But
+    // resumeWorkout() (the Home screen's "in progress" banner, and the
+    // state restored on page load) calls renderBlock() directly, skipping
+    // that init. A session saved before a PLANS update added a second
+    // exercise to a block (as happened when the Day 1 finisher was split
+    // into two circuit exercises) would have no log for the new exercise's
+    // id — reading it threw, resumeWorkout() never reached showScreen(),
+    // and tapping the banner silently did nothing.
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Blocks: A, B1/B2, C1/C2, D1/D2, E (Finisher) — 4 clicks to reach it.
+    for (let i = 0; i < 4; i++) {
+      await page.locator('#workout-next').click();
+    }
+    await expect(page.locator('.exercise-card')).toHaveCount(2);
+
+    // Simulate a session saved before this block had a second exercise:
+    // delete its set-log entry, as if it never existed. This has to
+    // mutate the page's live `state` object (not just localStorage) —
+    // the app's pagehide/visibilitychange autosave would otherwise
+    // re-persist the untouched in-memory state and undo a plain
+    // localStorage edit the instant the reload below navigates away.
+    await page.evaluate(() => { delete state.setLog['t1_b4_e1']; });
+
+    // Reload (as if reopening the app later) and resume via the Home banner.
+    await gotoAndSettle(page);
+    await expect(page.locator('#screen-home')).toBeVisible();
+    const resumeBanner = page.locator('.resume-banner');
+    await expect(resumeBanner).toContainText('Block 5 of 5');
+    await resumeBanner.click();
+
+    // Must actually navigate to the workout screen, with the self-healed
+    // log rendering a full set of empty rows for the second exercise.
+    await expect(page.locator('#screen-workout')).toBeVisible();
+    await expect(page.locator('.exercise-card')).toHaveCount(2);
+  });
+
   test('Day 4 warm-up Prehab step describes its own exercise, not a calf raise', async ({ page }) => {
     // Regression test: the source PDF itself pairs "Seated Wall Slide"
     // (a shoulder-mobility drill) with a description copy-pasted from
