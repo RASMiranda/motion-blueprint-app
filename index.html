@@ -187,6 +187,7 @@
     margin-bottom: 26px;
   }
   .plan-card {
+    width: 100%;
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -234,6 +235,7 @@
 
   /* ---------- Day list ---------- */
   .day-card {
+    width: 100%;
     background: var(--bg-card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
@@ -242,6 +244,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
+    text-align: left;
   }
   .day-card:active { background: var(--bg-card-active); }
   .day-card .tag {
@@ -295,6 +298,37 @@
   .resume-banner .info .rb-title { font-size: 14.5px; font-weight: 700; }
   .resume-banner .info .rb-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
   .resume-banner .chev { color: var(--amber); font-size: 20px; flex-shrink: 0; }
+
+  /* ---------- Install-the-app banner (home screen, browser tab only) ----------
+     Hidden by default; shown by JS only when NOT already running as the
+     installed app (see isInstalledApp()) — someone using the installed app
+     doesn't need a link to install it. */
+  .install-banner {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, rgba(59,111,240,0.14), rgba(59,111,240,0.05));
+    border: 1px solid rgba(59,111,240,0.35);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 22px;
+  }
+  .install-banner.show { display: flex; }
+  .install-banner .ib-text { flex: 1; min-width: 0; }
+  .install-banner .ib-title { font-size: 13.5px; font-weight: 700; }
+  .install-banner .ib-sub { font-size: 12px; color: var(--ink-dim); margin-top: 2px; line-height: 1.4; }
+  .install-banner .ib-link {
+    flex-shrink: 0;
+    background: var(--blue);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .install-banner .ib-link:active { background: var(--blue-dim); }
 
   /* ---------- Progress session cards (editable/deletable) ---------- */
   .session-card {
@@ -403,7 +437,14 @@
   .delete-confirm .confirm-no { background: var(--bg-elevated); color: var(--ink-dim); }
 
   /* ---------- Progress screen: export/import sessions (data migration) ---------- */
-  .io-row { display: flex; gap: 10px; margin: 18px 0 4px 0; }
+  .io-hint {
+    font-size: 12.5px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    margin: 14px 0 0 0;
+  }
+  .io-hint b { color: var(--ink); }
+  .io-row { display: flex; gap: 10px; margin: 12px 0 4px 0; }
   .io-btn {
     flex: 1;
     background: var(--bg-card);
@@ -512,6 +553,17 @@
     background: var(--blue);
     color: #fff;
   }
+  .option-why {
+    background: rgba(59,111,240,0.1);
+    border: 1px solid rgba(59,111,240,0.25);
+    border-radius: 10px;
+    padding: 9px 12px;
+    font-size: 12px;
+    color: var(--ink-dim);
+    line-height: 1.4;
+    margin: -4px 0 14px 0;
+  }
+  .option-why b { color: var(--ink); }
 
   .exercise-card {
     background: var(--bg-card);
@@ -545,6 +597,7 @@
     gap: 10px;
     margin-bottom: 14px;
   }
+  .wstep-media { margin-top: 10px; margin-bottom: 0; }
   .ex-thumb {
     width: 84px;
     height: 84px;
@@ -818,6 +871,29 @@
   }
   .wstep-check.checked { background: var(--green); border-color: var(--green); }
 
+  /* Prehab + Core are always performed back-to-back as a superset — group
+     them visually the same way the main workout's superset blocks read. */
+  .wstep-superset-group {
+    border: 1px dashed rgba(59,111,240,0.35);
+    border-radius: 14px;
+    padding: 0 14px;
+    margin: 4px 0;
+    background: rgba(59,111,240,0.04);
+  }
+  .wstep-superset-group .warmup-step:first-child { border-top: none; }
+  .wstep-superset-label {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 7px;
+    margin-top: 14px;
+  }
+
   /* ---------- Finisher / complete ---------- */
   .complete-wrap {
     text-align: center;
@@ -847,6 +923,24 @@
   }
   .info-box b { color: var(--ink); }
 
+  /* ---------- About screen: link to the open-source repo ---------- */
+  .about-repo-link {
+    margin-top: 24px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+  }
+  .about-repo-link a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ink-dim);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .about-repo-link a svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .about-repo-link a:active { color: var(--ink); }
+
   .rpe-mini {
     display: flex; gap: 6px; margin-top: 4px;
   }
@@ -868,6 +962,8 @@
     border-radius: 12px;
     font-size: 13px;
     font-weight: 600;
+    max-width: calc(100% - 40px);
+    text-align: center;
     opacity: 0;
     transition: all 0.25s ease;
     z-index: 200;
@@ -886,6 +982,14 @@
       <div class="brand"><span class="logo-mark"><span></span><span></span><span></span></span> Theory of Motion</div>
       <h1>Motion<br>Blueprint</h1>
       <p>For the athlete in everyone.</p>
+    </div>
+
+    <div class="install-banner" id="install-banner">
+      <div class="ib-text">
+        <div class="ib-title">Using this in your browser?</div>
+        <div class="ib-sub">Get the installed app — looks better, and works fully offline.</div>
+      </div>
+      <a class="ib-link" id="install-banner-link" href="https://github.com/RASMiranda/motion-blueprint-app/releases/download/v1.1.0/Motion.apk" target="_blank" rel="noopener">Get the app</a>
     </div>
 
     <div id="resume-banner-wrap"></div>
@@ -1021,6 +1125,7 @@
     </div>
     <div class="eyebrow">TRACKED</div>
     <h2 class="page-title">My Progress</h2>
+    <p class="io-hint">Switching from the browser version to this app? Open the webapp, tap <b>Export</b>, then come back here and tap <b>Import</b> to bring your logged sessions with you.</p>
     <div class="io-row">
       <button class="io-btn" onclick="exportSessions()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
@@ -1046,6 +1151,13 @@
     <p style="color:var(--ink-dim);font-size:14px;line-height:1.6;margin-top:12px;">Our hope is that you finish these workouts not just feeling stronger, but more confident in your ability to move, recover, and take on whatever life throws your way.</p>
     <p style="color:var(--ink);font-size:14px;line-height:1.6;margin-top:12px;font-style:italic;">Keep moving with purpose.</p>
     <p style="color:var(--ink-dim);font-size:13px;margin-top:18px;">theoryofmotion.co</p>
+
+    <div class="about-repo-link">
+      <a href="https://github.com/RASMiranda/motion-blueprint-app" target="_blank" rel="noopener" id="github-repo-link">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.57.1.78-.25.78-.55 0-.27-.01-1.16-.02-2.11-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.75 2.69 1.25 3.34.96.1-.75.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11 11 0 015.8 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.24 2.75.12 3.04.74.81 1.18 1.83 1.18 3.09 0 4.42-2.69 5.4-5.25 5.68.41.36.78 1.06.78 2.14 0 1.54-.01 2.79-.01 3.17 0 .3.2.66.79.55A10.52 10.52 0 0023.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>
+        View source on GitHub
+      </a>
+    </div>
   </div>
 
   <!-- ============ TAB BAR ============ -->
@@ -1126,7 +1238,7 @@ const WARMUPS = {
     { t: "90/90 Hip Switch", m: "8 reps/side", d: "Opens the hips and addresses rotation." },
     { t: "Quadruped Heel Sit T-Spine Rotation", m: "8 reps/side", d: "Improves upper back rotation and shoulder mobility." },
     { t: "Spiderman Lunge with Rotation", m: "4 reps/side", d: "Integrates hips, spine, and shoulders together." },
-    { t: "Seated Wall Slide", m: "2×12-15 (or 8-12/side)", d: "Builds calf strength and ankle mobility. Superset with the core move below." },
+    { t: "Seated Wall Slide", m: "2×12-15 (or 8-12/side)", d: "Improves shoulder mobility and scapular control — keep your low back, head, and arms in contact with the wall throughout. Superset with the core move below." },
     { t: "Suitcase Carry", m: "2×20-30s/side", d: "Targets core stability and grip strength." },
   ]},
 };
@@ -1136,6 +1248,13 @@ function ex(name, tag, options, reps, sets, rest, note){
   return { name, tag, options, reps, sets, rest, note };
 }
 
+// Each alternative in an exercise's options array is { l: label, w: "why
+// you'd pick this instead" }. `w` is straight from the source PDF's own
+// "choose this option if..." guidance — omitted (not fabricated) for
+// alternatives the PDF doesn't give an explicit reason for, usually the
+// first/default option in a pair.
+function opt(l, w){ return w ? { l, w } : { l }; }
+
 const PLANS = {
   total: {
     title: "3-Day Total Body",
@@ -1143,22 +1262,23 @@ const PLANS = {
     days: [
       { id:"t1", label:"Day 1", name:"Squat Focus", sub:"Lower body emphasis", warmup:1, blocks:[
         { label:"A · Power Development", exercises:[
-          ex("Box Jumps / Squat Jumps","Power",["Box Jumps","Squat Jumps (no box)"],"5 reps",3,30,"Explosive — reset between reps."),
+          ex("Box Jumps / Squat Jumps","Power",[opt("Box Jumps"),opt("Squat Jumps (no box)","No elevated surface to jump onto? Use this instead.")],"5 reps",3,30,"Explosive — reset between reps."),
         ]},
         { label:"B1 · Squat Variations ↔ B2 · Rear Delts (superset)", exercises:[
-          ex("Barbell Back Squat / DB Goblet Squat","Squat",["Barbell Back Squat","Dumbbell Goblet Squat"],"8 reps @ 6-7 RPE",4,90,"High or low bar. Superset with B2."),
-          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",["2DB Bent Over Reverse Flye","Cable Rear Delt Crossover Flye"],"10 reps @ 8 RPE",3,90,"Rest 60-120s, then return to B1."),
+          ex("Barbell Back Squat / DB Goblet Squat","Squat",[opt("Barbell Back Squat"),opt("Dumbbell Goblet Squat","No barbell or squat rack? Use this instead.")],"8 reps @ 6-7 RPE",4,90,"High or low bar. Superset with B2."),
+          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",[opt("2DB Bent Over Reverse Flye"),opt("Cable Rear Delt Crossover Flye","Have a cable machine? You can opt for this instead.")],"10 reps @ 8 RPE",3,90,"Rest 60-120s, then return to B1."),
         ]},
         { label:"C1 · Single-Leg Knee Dominant ↔ C2 · Pushing (superset)", exercises:[
-          ex("Goblet Reverse Lunge / Deficit Reverse Lunge","Single-Leg",["Goblet Reverse Lunge","Goblet Deficit Reverse Lunge (2-4\" elevation)"],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("2DB Alt. Incline Bench Press / Seesaw OH Press","Pushing",["2DB Alternating Incline Bench Press","2DB Seated Seesaw Overhead Press"],"8 reps/side @ 7-8 RPE",3,60,"Return to C1."),
+          ex("Goblet Reverse Lunge / Deficit Reverse Lunge","Single-Leg",[opt("Goblet Reverse Lunge"),opt("Goblet Deficit Reverse Lunge (2-4\" elevation)","Same move with a 2-4\" elevation for more range of motion.")],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("2DB Alt. Incline Bench Press / Seesaw OH Press","Pushing",[opt("2DB Alternating Incline Bench Press"),opt("2DB Seated Seesaw Overhead Press","No incline bench? Use this instead.")],"8 reps/side @ 7-8 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Hamstrings ↔ D2 · Core Flexion (superset)", exercises:[
           ex("Stability Ball Hamstring Curl Series","Hamstrings",null,"10-12 reps @ 8-9 RPE",3,90,"Superset with D2."),
           ex("Tuck Up Series","Core",null,"8-10 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
-          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,30,"Then Tall Plank KB/DB Drag 30s, then rest 30s. Repeat 4 rounds total."),
+          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,0,"Then Tall Plank KB/DB Drag."),
+          ex("Tall Plank KB/DB Drag","Finisher",null,"30 seconds",4,30,"Then return to Farmer Carry."),
         ]},
       ]},
       { id:"t2", label:"Day 2", name:"Bench Press Focus", sub:"Upper push & pull", warmup:2, blocks:[
@@ -1166,11 +1286,11 @@ const PLANS = {
           ex("Plyo Pushup","Power",null,"5 reps",3,50,"Explosive off the ground."),
         ]},
         { label:"B1 · Bench Press ↔ B2 · Single-Leg Hip Dominant (superset)", exercises:[
-          ex("Barbell Bench Press / 2DB Bench Press","Bench",["Barbell Bench Press","2DB Bench Press"],"8 reps @ 6-7 RPE",4,60,"Superset with B2."),
-          ex("1DB RFE SL Deadlift / Staggered Stance RDL","Single-Leg",["1DB Suitcase RFE SL Deadlift","1DB Suitcase Staggered Stance RDL"],"8 reps/side @ 7-8 RPE",3,60,"Return to B1."),
+          ex("Barbell Bench Press / 2DB Bench Press","Bench",[opt("Barbell Bench Press"),opt("2DB Bench Press","No barbell or bench setup? Use this instead.")],"8 reps @ 6-7 RPE",4,60,"Superset with B2."),
+          ex("1DB RFE SL Deadlift / Staggered Stance RDL","Single-Leg",[opt("1DB Suitcase RFE SL Deadlift"),opt("1DB Suitcase Staggered Stance RDL","Balance too challenging on the rear-foot-elevated version? Use this instead.")],"8 reps/side @ 7-8 RPE",3,60,"Return to B1."),
         ]},
         { label:"C1 · Overhead Press ↔ C2 · Row (superset)", exercises:[
-          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",["1/2 Kneeling Single Arm Overhead Press","Standing Single Arm DB Overhead Press"],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
+          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",[opt("1/2 Kneeling Single Arm Overhead Press"),opt("Standing Single Arm DB Overhead Press","Kneeling bothers your knees? Use this instead.")],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
           ex("DB 3-Point Row","Row",null,"10 reps/side @ 7 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Delts ↔ D2 · Arms (superset)", exercises:[
@@ -1183,15 +1303,15 @@ const PLANS = {
       ]},
       { id:"t3", label:"Day 3", name:"Deadlift Focus", sub:"Balanced emphasis", warmup:3, blocks:[
         { label:"A · Power", exercises:[
-          ex("Kettlebell Swing / Broad Jumps","Power",["Kettlebell Swing","Broad Jumps"],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
+          ex("Kettlebell Swing / Broad Jumps","Power",[opt("Kettlebell Swing"),opt("Broad Jumps","Prefer a jumping power variation? Use this instead.")],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
         ]},
         { label:"B1 · Deadlift ↔ B2 · Pushup (superset)", exercises:[
-          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",["Barbell Deadlift","Trap Bar or Kettlebell Deadlift"],"5 reps @ 7 RPE",4,90,"Superset with B2."),
+          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",[opt("Barbell Deadlift"),opt("Trap Bar or Kettlebell Deadlift")],"5 reps @ 7 RPE",4,90,"Superset with B2."),
           ex("Pushup Series","Pushup",null,"8 reps (pick your variation)",4,60,"Return to B1."),
         ]},
         { label:"C1 · Multi-Planar ↔ C2 · Pulling (superset)", exercises:[
           ex("Goblet Lateral Lunge","Multi-Planar",null,"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",["Band Assisted Pull Up (AMRAP)","Pull Up (AMRAP)","Lat Pulldown Machine (10 @ 8 RPE)"],"AMRAP or 10 reps",3,60,"Return to C1."),
+          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",[opt("Band Assisted Pull Up (AMRAP)"),opt("Pull Up (AMRAP)"),opt("Lat Pulldown Machine (10 @ 8 RPE)")],"AMRAP or 10 reps",3,60,"Return to C1."),
         ]},
         { label:"D1 · Quads ↔ D2 · Anti-Rotation (superset)", exercises:[
           ex("Goblet Cyclist Squat","Quads",null,"15 reps @ 6-7 RPE",3,90,"Superset with D2."),
@@ -1209,22 +1329,23 @@ const PLANS = {
     days: [
       { id:"u1", label:"Day 1", name:"Lower Body", sub:"Squat pattern", warmup:1, blocks:[
         { label:"A · Power", exercises:[
-          ex("Box Jumps / Squat Jumps","Power",["Box Jumps","Squat Jumps (no box)"],"5 reps",3,30,"Explosive — reset between reps."),
+          ex("Box Jumps / Squat Jumps","Power",[opt("Box Jumps"),opt("Squat Jumps (no box)","No elevated surface to jump onto? Use this instead.")],"5 reps",3,30,"Explosive — reset between reps."),
         ]},
         { label:"B1 · Squat ↔ B2 · Abductors (superset)", exercises:[
-          ex("Barbell Back Squat / DB Goblet Squat","Squat",["Barbell Back Squat","Dumbbell Goblet Squat"],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
-          ex("Copenhagen Plank (Short/Long Lever)","Abductors",["Short Lever","Long Lever (more stress)"],"15-30s/side @ 7-8 RPE",3,90,"Return to B1."),
+          ex("Barbell Back Squat / DB Goblet Squat","Squat",[opt("Barbell Back Squat"),opt("Dumbbell Goblet Squat","No barbell or squat rack? Use this instead.")],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
+          ex("Copenhagen Plank (Short/Long Lever)","Abductors",[opt("Short Lever"),opt("Long Lever (more stress)","More stress on the adductor — a harder progression.")],"15-30s/side @ 7-8 RPE",3,90,"Return to B1."),
         ]},
         { label:"C1 · Single-Leg Knee Dominant ↔ C2 · Hinge (superset)", exercises:[
-          ex("2DB RFE Split Squat / 2DB Split Squat","Single-Leg",["2DB Rear Foot Elevated Split Squat","2DB Split Squat"],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("BB Hip Thrust / BB Romanian Deadlift","Hinge",["BB Hip Thrust","BB Romanian Deadlift"],"10 or 8 reps @ 8 RPE",3,60,"Return to C1."),
+          ex("2DB RFE Split Squat / 2DB Split Squat","Single-Leg",[opt("2DB Rear Foot Elevated Split Squat"),opt("2DB Split Squat","Rear-foot-elevated version too hard on balance? Use this instead.")],"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
+          ex("BB Hip Thrust / BB Romanian Deadlift","Hinge",[opt("BB Hip Thrust"),opt("BB Romanian Deadlift","Hip thrust set-up too cumbersome? Use this instead.")],"10 or 8 reps @ 8 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Hamstrings ↔ D2 · Core Flexion (superset)", exercises:[
           ex("Stability Ball Hamstring Curl Series","Hamstrings",null,"10-12 reps @ 8-9 RPE",3,60,"Superset with D2."),
           ex("Tuck Up Series","Core",null,"8-10 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
-          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,30,"Then Tall Plank KB/DB Drag 30s, then rest 30s."),
+          ex("2KB/2DB Farmer Carry","Finisher",null,"30 seconds",4,0,"Then Tall Plank KB/DB Drag."),
+          ex("Tall Plank KB/DB Drag","Finisher",null,"30 seconds",4,30,"Then return to Farmer Carry."),
         ]},
       ]},
       { id:"u2", label:"Day 2", name:"Upper Body", sub:"Bench pattern", warmup:2, blocks:[
@@ -1232,11 +1353,11 @@ const PLANS = {
           ex("Plyo Pushup","Power",null,"5 reps",3,50,"Explosive off the ground."),
         ]},
         { label:"B1 · Bench Press ↔ B2 · Rear Delts (superset)", exercises:[
-          ex("Barbell Bench Press / 2DB Bench Press","Bench",["Barbell Bench Press","2DB Bench Press"],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
-          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",["2DB Bent Over Reverse Flye","Cable Rear Delt Crossover Flye"],"10 reps @ 8 RPE",3,90,"Return to B1."),
+          ex("Barbell Bench Press / 2DB Bench Press","Bench",[opt("Barbell Bench Press"),opt("2DB Bench Press","No barbell or bench setup? Use this instead.")],"8 reps @ 6-7 RPE",4,90,"Superset with B2."),
+          ex("2DB Bent Over Reverse Flye / Cable Crossover Flye","Rear Delts",[opt("2DB Bent Over Reverse Flye"),opt("Cable Rear Delt Crossover Flye","Have a cable machine? You can opt for this instead.")],"10 reps @ 8 RPE",3,90,"Return to B1."),
         ]},
         { label:"C1 · Overhead Press ↔ C2 · Row (superset)", exercises:[
-          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",["1/2 Kneeling Single Arm Overhead Press","Standing Single Arm DB Overhead Press"],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
+          ex("½ Kneeling / Standing Single Arm OH Press","Overhead",[opt("1/2 Kneeling Single Arm Overhead Press"),opt("Standing Single Arm DB Overhead Press","Kneeling bothers your knees? Use this instead.")],"8 reps/side @ 7 RPE",3,60,"Superset with C2."),
           ex("DB 3-Point Row","Row",null,"10 reps/side @ 7 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Delts ↔ D2 · Arms (superset)", exercises:[
@@ -1249,15 +1370,15 @@ const PLANS = {
       ]},
       { id:"u3", label:"Day 3", name:"Lower Body", sub:"Deadlift pattern", warmup:3, blocks:[
         { label:"A · Power", exercises:[
-          ex("Kettlebell Swing / Broad Jumps","Power",["Kettlebell Swing","Broad Jumps"],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
+          ex("Kettlebell Swing / Broad Jumps","Power",[opt("Kettlebell Swing"),opt("Broad Jumps","Prefer a jumping power variation? Use this instead.")],"8 reps (or 5 for jumps) @ 6-7 RPE",3,40,"Snappy and powerful."),
         ]},
         { label:"B1 · Deadlift ↔ B2 · Calves (superset)", exercises:[
-          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",["Barbell Deadlift","Trap Bar or Kettlebell Deadlift"],"5 reps @ 7 RPE",4,90,"Superset with B2."),
-          ex("Single Leg Calf Raise off Plate (± weighted)","Calves",["Bodyweight","Weighted"],"10-12 reps/side @ 8-9 RPE",3,60,"Return to B1."),
+          ex("Barbell / Trap Bar / KB Deadlift","Deadlift",[opt("Barbell Deadlift"),opt("Trap Bar or Kettlebell Deadlift")],"5 reps @ 7 RPE",4,90,"Superset with B2."),
+          ex("Single Leg Calf Raise off Bumper Plate (± weighted)","Calves",[opt("Single Leg Calf Raise off Bumper Plate"),opt("Weighted Single Leg Calf Raise off Bumper Plate","Want more challenge? Add weight.")],"10-12 reps/side @ 8-9 RPE",3,60,"Return to B1."),
         ]},
         { label:"C1 · Multi-Planar ↔ C2 · Hinge (superset)", exercises:[
           ex("Goblet Lateral Lunge","Multi-Planar",null,"8 reps/side @ 7-8 RPE",3,60,"Superset with C2."),
-          ex("2DB Romanian Deadlift / 2DB Single Leg Deadlift","Hinge",["2DB Romanian Deadlift (10 reps)","2DB Single Leg Deadlift (8 reps/side — double volume)"],"10 reps or 8/side @ 8 RPE",3,60,"Return to C1."),
+          ex("2DB Romanian Deadlift / 2DB Single Leg Deadlift","Hinge",[opt("2DB Romanian Deadlift (10 reps)"),opt("2DB Single Leg Deadlift (8 reps/side — double volume)","Have the time and energy? This doubles the reps (per side) for more work.")],"10 reps or 8/side @ 8 RPE",3,60,"Return to C1."),
         ]},
         { label:"D1 · Quads ↔ D2 · Anti-Rotation (superset)", exercises:[
           ex("Goblet Cyclist Squat","Quads",null,"15 reps @ 6-7 RPE",3,60,"Superset with D2."),
@@ -1269,22 +1390,23 @@ const PLANS = {
       ]},
       { id:"u4", label:"Day 4", name:"Upper Body", sub:"Pull pattern", warmup:4, blocks:[
         { label:"A · Power", exercises:[
-          ex("Single Arm DB Push Press / Medicine Ball Slam","Power",["Single Arm DB Push Press","Medicine Ball Floor Slam"],"5 reps/side or 8 reps @ 5-6 RPE",3,45,"Light and powerful."),
+          ex("Single Arm DB Push Press / Medicine Ball Slam","Power",[opt("Single Arm DB Push Press"),opt("Medicine Ball Floor Slam","Have a soft medicine ball? Use this instead.")],"5 reps/side or 8 reps @ 5-6 RPE",3,45,"Light and powerful."),
         ]},
         { label:"B1 · Pulling ↔ B2 · Pressing (superset)", exercises:[
-          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",["Band Assisted Pull Up (AMRAP)","Pull Up (AMRAP)","Lat Pulldown Machine (10 @ 8 RPE)"],"AMRAP or 10 reps",4,90,"Superset with B2."),
+          ex("Band Assisted Pull Up / Pull Up / Lat Pulldown","Pulling",[opt("Band Assisted Pull Up (AMRAP)"),opt("Pull Up (AMRAP)"),opt("Lat Pulldown Machine (10 @ 8 RPE)")],"AMRAP or 10 reps",4,90,"Superset with B2."),
           ex("2DB Incline Bench Press","Pressing",null,"8 reps @ 7-8 RPE",4,60,"Return to B1."),
         ]},
         { label:"C1 · Hinge (Row) ↔ C2 · Pushup (superset)", exercises:[
-          ex("Seated Cable Row / 2DB Bent Over Row","Row",["Seated Cable Row (12 @ 8-9 RPE)","2DB Bent Over Row (10 @ 8 RPE)"],"10-12 reps",3,60,"Superset with C2."),
+          ex("Seated Cable Row / 2DB Bent Over Row","Row",[opt("Seated Cable Row (12 @ 8-9 RPE)"),opt("2DB Bent Over Row (10 @ 8 RPE)","No cable or band setup? Use this instead.")],"10-12 reps",3,60,"Superset with C2."),
           ex("Pushup Series","Pushup",null,"8 reps (pick your variation)",3,60,"Return to C1."),
         ]},
         { label:"D1 · Delts ↔ D2 · Triceps (superset)", exercises:[
           ex("2DB Front Raise","Delts",null,"12 reps @ 8-9 RPE",3,60,"Superset with D2."),
-          ex("2DB Lying Triceps Ext. / Band Low OH Triceps Ext.","Triceps",["2DB Lying Triceps Extensions","Band/Cable Low Overhead Triceps Extension"],"12 reps @ 8-9 RPE",3,60,"Return to D1."),
+          ex("2DB Lying Triceps Ext. / Band Low OH Triceps Ext.","Triceps",[opt("2DB Lying Triceps Extensions"),opt("Band/Cable Low Overhead Triceps Extension","Have a band or cable setup? Use this instead.")],"12 reps @ 8-9 RPE",3,60,"Return to D1."),
         ]},
         { label:"E · Finisher — 4 rounds", exercises:[
-          ex("2KB/2DB Thruster","Finisher",null,"20 seconds",4,20,"Then Front Plank 20s, then rest 20s. Repeat 4 rounds."),
+          ex("2KB/2DB Thruster","Finisher",null,"20 seconds",4,0,"Then Front Plank."),
+          ex("Front Plank","Finisher",null,"20 seconds",4,20,"Then return to Thruster."),
         ]},
       ]},
     ]
@@ -1492,12 +1614,22 @@ function renderWarmupSelect(){
   });
 }
 
+// Steps 5 (Prehab) and 6 (Core) are always performed as a superset in this
+// program — back-to-back with minimal rest, same as the "superset" blocks
+// in the main workout screen — every day's step 5 description says as much
+// ("Superset with the core move below"). That pairing was only ever prose
+// buried in step 5's own text; this groups the two rows visually so it
+// reads the same way the main workout's superset blocks do.
+const WARMUP_SUPERSET_FROM = 4; // 0-indexed: Prehab is index 4, Core is 5
+
 function openWarmupDetail(n){
   const w = WARMUPS[n];
   document.getElementById('warmup-detail-eyebrow').textContent = `DAY ${n} · ${w.focus.toUpperCase()}`;
   const wrap = document.getElementById('warmup-detail-steps');
   wrap.innerHTML = '';
+  let target = wrap;
   w.steps.forEach((s, i) => {
+    const videoId = lookupVideo(s.t);
     const row = document.createElement('div');
     row.className = 'warmup-step';
     row.innerHTML = `
@@ -1506,10 +1638,18 @@ function openWarmupDetail(n){
         <div class="t">${s.t}</div>
         <div class="m">${s.m}</div>
         <div class="d">${s.d}</div>
+        <div class="ex-media wstep-media">${buildMediaRowHtml(s.t, videoId)}</div>
       </div>
       <button class="wstep-check" onclick="this.classList.toggle('checked')"></button>
     `;
-    wrap.appendChild(row);
+
+    if(i === WARMUP_SUPERSET_FROM){
+      target = document.createElement('div');
+      target.className = 'wstep-superset-group';
+      target.innerHTML = `<div class="wstep-superset-label">Superset</div>`;
+      wrap.appendChild(target);
+    }
+    target.appendChild(row);
   });
   showScreen('screen-warmup-detail');
 }
@@ -1568,6 +1708,18 @@ function renderBlock(){
 
   block.exercises.forEach((exc, ei) => {
     const id = exId(day.id, state.blockIndex, ei);
+    // Self-heal missing set logs: startWorkout() initializes one per
+    // exercise up front, but a workout resumed from a saved state (the
+    // Home screen's "in progress" banner, or state loaded on page load)
+    // skips straight to renderBlock() and never runs that init. If the
+    // exercise data changed since the session was saved — e.g. a finisher
+    // block gaining a second exercise in an app update — an id from a
+    // newer PLANS definition can have no matching log yet. Without this,
+    // reading state.setLog[id] below throws and resumeWorkout() silently
+    // fails to switch screens, leaving the tap looking like it did nothing.
+    if(!state.setLog[id]){
+      state.setLog[id] = Array.from({length: exc.sets}, () => ({weight:'', reps:'', rpe:'', checked:false}));
+    }
     const card = document.createElement('div');
     card.className = 'exercise-card';
 
@@ -1575,8 +1727,16 @@ function renderBlock(){
     if(exc.options){
       const chosen = state.optionChoice[id] || 0;
       optHtml = `<div class="option-toggle">` + exc.options.map((o,oi)=>
-        `<button class="${oi===chosen?'active':''}" onclick="chooseOption('${id}',${oi})">${o.split('(')[0].trim()}</button>`
+        `<button class="${oi===chosen?'active':''}" onclick="chooseOption('${id}',${oi})">${o.l.split('(')[0].trim()}</button>`
       ).join('') + `</div>`;
+      // Why you'd pick the currently-selected alternative — straight from
+      // the source PDF's own "choose this option if..." guidance. Only
+      // shown when this specific option has one (the default/first option
+      // in a pair usually doesn't need a reason to pick it).
+      const chosenWhy = exc.options[chosen].w;
+      if(chosenWhy){
+        optHtml += `<div class="option-why"><b>Why this one:</b> ${chosenWhy}</div>`;
+      }
     }
 
     const setsWrap = document.createElement('div');
@@ -1600,49 +1760,21 @@ function renderBlock(){
     // otherwise the exercise's own name, matched against the hardcoded VIDEO_MAP
     // pulled directly from the source PDF's own hyperlinks.
     const chosenIdx = state.optionChoice[id] || 0;
-    const searchName = exc.options ? exc.options[chosenIdx].split('(')[0].trim() : exc.name.split('/')[0].trim();
-    const videoId = lookupVideo(searchName) || lookupVideo(exc.name);
-    const thumbId = `thumb_${id}`;
+    const searchName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
+    // Try the full name first — several no-option exercises have a "/" as
+    // part of their own compound name (e.g. "2KB/2DB Thruster", "2KB/2DB
+    // Farmer Carry"), and VIDEO_MAP has an exact entry for the full name.
+    // Only fall back to the pre-slash prefix for the rare case with no
+    // single VIDEO_MAP entry of its own (e.g. "KB/DB Chain: Clean → ..."
+    // falls back to "KB", partial-matching the "KB Chain" demo). Trying
+    // the shortened prefix *first* was the bug: "2KB/2DB Thruster" cut
+    // down to "2KB" partial-matched the earlier "2KB/2DB Farmer Carry"
+    // entry instead of its own exact video.
+    const videoId = lookupVideo(searchName) || lookupVideo(exc.name.split('/')[0].trim());
 
     const mediaRow = document.createElement('div');
     mediaRow.className = 'ex-media';
-
-    if(videoId){
-      const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-      mediaRow.innerHTML = `
-        <a class="ex-thumb loaded" id="${thumbId}" href="${ytUrl}" target="_blank" rel="noopener">
-          <img src="${thumbUrl}" alt="${searchName}" loading="lazy" onerror="this.parentElement.classList.remove('loaded'); this.remove();">
-          <div class="ph-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-            <span>Preview</span>
-          </div>
-        </a>
-        <a class="ex-video-btn" href="${ytUrl}" target="_blank" rel="noopener">
-          <div class="play-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-          <div class="vb-text">
-            <div class="vt-main">Watch demo</div>
-            <div class="vt-sub">${searchName}</div>
-          </div>
-        </a>
-      `;
-    } else {
-      mediaRow.innerHTML = `
-        <div class="ex-thumb" id="${thumbId}">
-          <div class="ph-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
-            <span>No preview</span>
-          </div>
-        </div>
-        <div class="ex-video-btn" style="opacity:0.5;">
-          <div class="play-icon" style="background:var(--line);"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
-          <div class="vb-text">
-            <div class="vt-main">No demo linked</div>
-            <div class="vt-sub">${searchName}</div>
-          </div>
-        </div>
-      `;
-    }
+    mediaRow.innerHTML = buildMediaRowHtml(searchName, videoId);
 
     card.innerHTML = `
       <div class="ex-name">${exc.name}</div>
@@ -1650,17 +1782,32 @@ function renderBlock(){
       ${optHtml}
     `;
     card.appendChild(mediaRow);
-    const noteEl = document.createElement('div');
-    noteEl.className = 'ex-note';
-    noteEl.textContent = exc.note;
-    card.appendChild(noteEl);
+    // Only some exercises have a genuine coaching note in the source PDF
+    // (e.g. "Choose this option if..."). Circuit exercises with no such
+    // text of their own used to get an invented sentence narrating the
+    // sequence — but the PDF itself has no description there, just a
+    // plain numbered list, and the card order plus the rest button's
+    // presence/absence already convey the same thing.
+    if(exc.note){
+      const noteEl = document.createElement('div');
+      noteEl.className = 'ex-note';
+      noteEl.textContent = exc.note;
+      card.appendChild(noteEl);
+    }
     card.appendChild(setsWrap);
 
-    const restBtn = document.createElement('button');
-    restBtn.className = 'rest-btn';
-    restBtn.textContent = `Start Rest Timer · ${exc.rest}s`;
-    restBtn.onclick = () => startTimer(exc.rest);
-    card.appendChild(restBtn);
+    // Some circuit exercises (e.g. the first half of a finisher pair) have
+    // no individual rest of their own — you move straight into the next
+    // exercise, and the real rest is its own separate step after both are
+    // done. Showing a "Start Rest Timer · 0s" button there would suggest
+    // a rest exists where the source program says there isn't one.
+    if(exc.rest > 0){
+      const restBtn = document.createElement('button');
+      restBtn.className = 'rest-btn';
+      restBtn.textContent = `Start Rest Timer · ${exc.rest}s`;
+      restBtn.onclick = () => startTimer(exc.rest);
+      card.appendChild(restBtn);
+    }
 
     content.appendChild(card);
   });
@@ -1708,6 +1855,7 @@ const VIDEO_MAP = {
   "Barbell Bench Press": "pvtmDcyG3Jk",
   "2DB Bench Press": "bZvwg5jmx10",
   "1DB Suitcase Rear Foot Elevated SL Deadlift": "DCU80Fwz2N4",
+  "1DB Suitcase RFE SL Deadlift": "DCU80Fwz2N4",
   "1DB Suitcase Staggered Stance RDL": "skVF1dhz2jQ",
   "1/2 Kneeling Single Arm Overhead Press": "4kxlfEGuwoM",
   "Standing Single Arm DB Overhead Press": "TZiiRF6XiQ4",
@@ -1719,6 +1867,7 @@ const VIDEO_MAP = {
   "Barbell Deadlift": "lvbdWmGP7I0",
   "Trap Bar Deadlift": "iRapUCokBrc",
   "Kettlebell Deadlift": "gm7ZdrvoSFo",
+  "Trap Bar or Kettlebell Deadlift": "iRapUCokBrc",
   "Pushup Series": "2FUzDiFXNmc",
   "Goblet Lateral Lunge": "NSt1SeWPWhc",
   "Band Assisted Pull Up": "LWSSa1SPges",
@@ -1749,6 +1898,7 @@ const VIDEO_MAP = {
   "2KB/2DB Thruster": "gr7TjKm0wCw",
   "Front Plank": "B4_gxkICr5M",
   "Leaning Wall Double Leg Calf Raises": "JWJP7mi1wJc",
+  "Leaning Wall Calf Raises": "JWJP7mi1wJc",
   "Leaning Wall Single Leg Calf Raises": "X2P2xiTxqFo"
 };
 
@@ -1773,6 +1923,47 @@ function lookupVideo(name){
     if(norm.startsWith(kn) || kn.startsWith(norm)) return VIDEO_MAP[k];
   }
   return null;
+}
+
+// Builds the video-preview row (thumbnail + "Watch demo" link, or a graceful
+// "no preview"/"no demo linked" fallback) shared by exercise cards and
+// warm-up steps alike — both are just a name + a resolved video id.
+function buildMediaRowHtml(displayName, videoId){
+  if(videoId){
+    const ytUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const thumbUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+    return `
+      <a class="ex-thumb loaded" href="${ytUrl}" target="_blank" rel="noopener">
+        <img src="${thumbUrl}" alt="${displayName}" loading="lazy" onerror="this.parentElement.classList.remove('loaded'); this.remove();">
+        <div class="ph-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+          <span>Preview</span>
+        </div>
+      </a>
+      <a class="ex-video-btn" href="${ytUrl}" target="_blank" rel="noopener">
+        <div class="play-icon"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+        <div class="vb-text">
+          <div class="vt-main">Watch demo</div>
+          <div class="vt-sub">${displayName}</div>
+        </div>
+      </a>
+    `;
+  }
+  return `
+    <div class="ex-thumb">
+      <div class="ph-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span>No preview</span>
+      </div>
+    </div>
+    <div class="ex-video-btn" style="opacity:0.5;">
+      <div class="play-icon" style="background:var(--line);"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+      <div class="vb-text">
+        <div class="vt-main">No demo linked</div>
+        <div class="vt-sub">${displayName}</div>
+      </div>
+    </div>
+  `;
 }
 
 function chooseOption(id, idx){
@@ -1821,6 +2012,12 @@ function finishWorkout(){
   day.blocks.forEach((block, bi) => {
     block.exercises.forEach((exc, ei) => {
       const id = exId(day.id, bi, ei);
+      // Same self-heal as renderBlock(): a resumed session saved before
+      // a PLANS change (e.g. a block gaining an exercise) may have no log
+      // for this id yet.
+      if(!state.setLog[id]){
+        state.setLog[id] = Array.from({length: exc.sets}, () => ({weight:'', reps:'', rpe:'', checked:false}));
+      }
       const log = state.setLog[id];
       totalSets += log.length;
       doneSets += log.filter(s => s.checked).length;
@@ -1828,7 +2025,7 @@ function finishWorkout(){
       // Record which option was selected (e.g. "Squat Jumps" vs "Box Jumps")
       // so the saved history reflects what was actually performed.
       const chosenIdx = state.optionChoice[id] || 0;
-      const performedName = exc.options ? exc.options[chosenIdx].split('(')[0].trim() : exc.name;
+      const performedName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
 
       exerciseDetails.push({
         name: performedName,
@@ -2022,16 +2219,22 @@ function exportSessions(){
     return;
   }
   const payload = SessionUtils.buildExportPayload(state.history);
+  const filename = SessionUtils.buildExportFilename();
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `motion-blueprint-sessions-${new Date().toISOString().slice(0,10)}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
-  showToast(`Exported ${state.history.length} session${state.history.length === 1 ? '' : 's'}`);
+  // Name the exact file and where it landed — the browser handles the
+  // actual save silently (no "Save As" dialog on Android), so this is
+  // the only place the person finds out what to look for afterward.
+  // Longer duration than the default toast: this message has more to
+  // read (a full filename) than a short status update.
+  showToast(`Saved ${filename} to your Downloads folder`, 4000);
 }
 
 function triggerImportSessions(){
@@ -2163,21 +2366,39 @@ function initRpeDial(){
    TOAST
    ============================================================ */
 let toastTimeout;
-function showToast(msg){
+function showToast(msg, duration){
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
   clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(()=>t.classList.remove('show'), 1400);
+  toastTimeout = setTimeout(()=>t.classList.remove('show'), duration || 1400);
 }
 
 /* ============================================================
    INIT
    ============================================================ */
+/* ============================================================
+   INSTALL BANNER — nudges browser-tab visitors toward the
+   installed app (better UX, fully offline), and stays hidden for
+   anyone already running it as an installed/standalone app.
+   ============================================================ */
+function isInstalledApp(){
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.matchMedia('(display-mode: fullscreen)').matches ||
+         window.navigator.standalone === true; // iOS Safari home-screen apps
+}
+
+function renderInstallBanner(){
+  if(!isInstalledApp()){
+    document.getElementById('install-banner').classList.add('show');
+  }
+}
+
 function init(){
   renderWarmupSelect();
   renderProgress();
   renderResumeBanner();
+  renderInstallBanner();
   initRpeDial();
 
   // Refresh progress each time tab opened
