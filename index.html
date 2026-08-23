@@ -986,10 +986,10 @@
 
     <div class="install-banner" id="install-banner">
       <div class="ib-text">
-        <div class="ib-title">Using this in your browser?</div>
-        <div class="ib-sub">Get the installed app — looks better, and works fully offline.</div>
+        <div class="ib-title">Hide the address bar</div>
+        <div class="ib-sub">Install the app for a full-screen experience — no address bar, works offline.</div>
       </div>
-      <a class="ib-link" id="install-banner-link" href="https://github.com/RASMiranda/motion-blueprint-app/releases/download/v1.1.0/Motion.apk" target="_blank" rel="noopener">Get the app</a>
+      <a class="ib-link" id="install-banner-link" href="https://github.com/RASMiranda/motion-blueprint-app/releases/download/v1.1.0/Motion.apk" target="_blank" rel="noopener">Install</a>
     </div>
 
     <div id="resume-banner-wrap"></div>
@@ -2378,13 +2378,39 @@ function showToast(msg, duration){
    INIT
    ============================================================ */
 /* ============================================================
-   INSTALL BANNER — nudges browser-tab visitors toward the
-   installed app (better UX, fully offline), and stays hidden for
-   anyone already running it as an installed/standalone app.
+   INSTALL BANNER — nudges browser-tab visitors to install the app,
+   which hides the address bar entirely and gives a full-screen
+   experience. Hidden when already running as an installed app.
+
+   On Android Chrome, we capture the beforeinstallprompt event so
+   tapping "Install" shows the native "Add to Home Screen" dialog
+   (instant, no APK download needed). On other browsers the button
+   falls back to the APK link.
    ============================================================ */
+
+// Capture Chrome's native install prompt as early as possible.
+let _nativeInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // stop the automatic mini-infobar
+  _nativeInstallPrompt = e;
+  // Switch the button from APK link → native prompt trigger
+  const btn = document.getElementById('install-banner-link');
+  if (btn) {
+    btn.removeAttribute('href');
+    btn.removeAttribute('target');
+    btn.removeAttribute('rel');
+    btn.onclick = (ev) => {
+      ev.preventDefault();
+      _nativeInstallPrompt.prompt();
+      _nativeInstallPrompt.userChoice.then(() => { _nativeInstallPrompt = null; });
+    };
+  }
+});
+
 function isInstalledApp(){
   return window.matchMedia('(display-mode: standalone)').matches ||
          window.matchMedia('(display-mode: fullscreen)').matches ||
+         window.matchMedia('(display-mode: minimal-ui)').matches ||
          window.navigator.standalone === true; // iOS Safari home-screen apps
 }
 
