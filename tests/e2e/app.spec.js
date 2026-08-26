@@ -345,6 +345,40 @@ test.describe('Motion Blueprint', () => {
     await expect(firstCard.locator('.session-main .info .t')).toContainText('Day 1');
   });
 
+  test('starting a new workout pre-fills weight/reps/RPE from the last logged session of the same day', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Log specific numbers on the first exercise's first set and finish the session.
+    const firstRow = page.locator('.set-row').first();
+    await firstRow.locator('input').nth(0).fill('135');
+    await firstRow.locator('input').nth(1).fill('8');
+    await firstRow.locator('input').nth(2).fill('7');
+    await firstRow.locator('.check').click();
+    for (let i = 0; i < 10; i++) {
+      if (await page.locator('#screen-complete').evaluate(el => el.classList.contains('active'))) break;
+      await page.locator('#workout-next').click();
+    }
+    await expect(page.locator('#screen-complete')).toBeVisible();
+    await page.locator('.btn-primary', { hasText: 'Back to Home' }).click();
+
+    // Start the very same day again — a fresh start, not a resume (the
+    // just-finished session cleared its in-progress state).
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    const newFirstRow = page.locator('.set-row').first();
+    await expect(newFirstRow.locator('input').nth(0)).toHaveValue('135');
+    await expect(newFirstRow.locator('input').nth(1)).toHaveValue('8');
+    await expect(newFirstRow.locator('input').nth(2)).toHaveValue('7');
+    // Pre-filled values are just a starting point — "checked" always
+    // starts fresh regardless of what was logged last time.
+    await expect(newFirstRow.locator('.check')).not.toHaveClass(/checked/);
+  });
+
   test('export downloads a JSON file with the logged session', async ({ page }) => {
     await gotoAndSettle(page);
     await logAFullWorkout(page);
