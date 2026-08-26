@@ -422,4 +422,105 @@ test.describe('Motion Blueprint', () => {
 
     await context.setOffline(false);
   });
+
+  test('workout timer chip appears when a session starts and ticks', async ({ page }) => {
+    await gotoAndSettle(page);
+
+    // Start a workout
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Timer chip must be visible
+    const chip = page.locator('#workout-timer-chip');
+    await expect(chip).toBeVisible();
+
+    // Chip should have the running class and show a time in M:SS format
+    await expect(chip).toHaveClass(/running/);
+    await expect(page.locator('#wt-time')).toHaveText(/^\d+:\d{2}$/);
+
+    // Pause button should be visible
+    await expect(page.locator('#wt-btn')).toBeVisible();
+  });
+
+  test('workout timer pauses and resumes', async ({ page }) => {
+    await gotoAndSettle(page);
+
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    const chip = page.locator('#workout-timer-chip');
+    await expect(chip).toHaveClass(/running/);
+
+    // Wait a moment then pause
+    await page.waitForTimeout(1100);
+    await page.locator('#wt-btn').click();
+
+    // Chip should now be paused (amber state)
+    await expect(chip).toHaveClass(/paused/);
+    await expect(page.locator('#wt-btn')).toHaveText('▷');
+
+    // Capture time while paused — it should not advance
+    const frozenTime = await page.locator('#wt-time').textContent();
+    await page.waitForTimeout(1500);
+    const stillFrozen = await page.locator('#wt-time').textContent();
+    expect(frozenTime).toBe(stillFrozen);
+
+    // Resume
+    await page.locator('#wt-btn').click();
+    await expect(chip).toHaveClass(/running/);
+    await expect(page.locator('#wt-btn')).toHaveText('⏸');
+  });
+
+  test('workout timer records duration and shows it on complete screen and in history', async ({ page }) => {
+    await gotoAndSettle(page);
+
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Wait for a couple of seconds so the duration is non-zero
+    await page.waitForTimeout(2000);
+
+    // Finish the workout
+    await page.locator('.set-row .check').first().click();
+    for (let i = 0; i < 10; i++) {
+      if (await page.locator('#screen-complete').evaluate(el => el.classList.contains('active'))) break;
+      await page.locator('#workout-next').click();
+    }
+    await expect(page.locator('#screen-complete')).toBeVisible();
+
+    // Completion summary should include a duration (M:SS format)
+    const summary = await page.locator('#complete-summary').textContent();
+    expect(summary).toMatch(/\d+:\d{2}/);
+
+    // Timer chip should be hidden on complete screen
+    await expect(page.locator('#workout-timer-chip')).not.toBeVisible();
+
+    // Navigate to Progress and verify the session card shows duration
+    await page.locator('button.tab-btn[data-tab="screen-progress"]').click();
+    const statusText = await page.locator('.session-card .status').first().textContent();
+    expect(statusText).toMatch(/\d+:\d{2}/);
+  });
+
+  test('workout timer chip is hidden after exiting mid-workout', async ({ page }) => {
+    await gotoAndSettle(page);
+
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+    await expect(page.locator('#workout-timer-chip')).toBeVisible();
+
+    // Exit without finishing (use the workout screen's own back button)
+    await page.locator('#screen-workout .topbar .back').click();
+    await expect(page.locator('#screen-workout')).not.toBeVisible();
+
+    // When we navigate back, the chip should not be visible (no active timer)
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+    // A new workout start should show a fresh chip
+    await expect(page.locator('#workout-timer-chip')).toBeVisible();
+    await expect(page.locator('#workout-timer-chip')).toHaveClass(/running/);
+  });
 });
