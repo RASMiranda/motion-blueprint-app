@@ -814,6 +814,51 @@
     max-width: 260px; line-height: 1.5;
   }
 
+  /* ---------- Workout session timer chip ---------- */
+  .workout-timer-chip {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 5px 10px 5px 8px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.2s;
+  }
+  .workout-timer-chip .wt-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4caf50;
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+  .workout-timer-chip.running .wt-dot {
+    animation: wt-pulse 1.4s ease-in-out infinite;
+  }
+  .workout-timer-chip.paused .wt-dot {
+    background: var(--amber);
+    animation: none;
+  }
+  @keyframes wt-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.7); }
+  }
+  .workout-timer-chip .wt-time {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 13px; letter-spacing: 0.03em;
+    min-width: 36px; text-align: center;
+    transition: color 0.2s;
+  }
+  .workout-timer-chip.paused .wt-time { color: var(--amber); }
+  .workout-timer-chip .wt-btn {
+    font-size: 14px; line-height: 1;
+    color: var(--ink-dim);
+    background: none; border: none; padding: 0; cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+  .workout-timer-chip.paused .wt-btn { color: var(--amber); }
+
   /* ---------- Timer overlay ---------- */
   .timer-overlay {
     position: fixed; inset: 0;
@@ -1061,6 +1106,11 @@
   <div class="screen" id="screen-workout">
     <div class="topbar">
       <button class="back" onclick="exitWorkout()">‹</button>
+      <div class="workout-timer-chip running" id="workout-timer-chip" onclick="toggleWorkoutTimer()" style="display:none;" role="button" aria-label="Workout timer">
+        <span class="wt-dot"></span>
+        <span class="wt-time" id="wt-time">0:00</span>
+        <button class="wt-btn" id="wt-btn" aria-label="Pause timer" onclick="event.stopPropagation();toggleWorkoutTimer()">⏸</button>
+      </div>
       <div style="font-size:12px;color:var(--ink-faint);font-weight:700;" id="workout-block-count"></div>
     </div>
     <div class="progress-track" id="workout-progress"></div>
@@ -1444,6 +1494,7 @@ function loadState(){
     optionChoice: saved.optionChoice || {},
     setLog: saved.setLog || {},
     history: JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'),
+    workoutTimer: saved.workoutTimer || { running: false, elapsedMs: 0, resumedAt: null },
   };
 }
 
@@ -1472,6 +1523,7 @@ function saveStateNow(){
       blockIndex: state.blockIndex,
       optionChoice: state.optionChoice,
       setLog: state.setLog,
+      workoutTimer: state.workoutTimer,
     };
     localStorage.setItem(STATE_KEY, JSON.stringify(toSave));
   } catch(e) {
@@ -1486,7 +1538,19 @@ function saveStateNow(){
 // scenario debouncing is riskiest for, since there's no guarantee a
 // pending setTimeout gets to run once the page starts unloading.
 document.addEventListener('visibilitychange', () => {
-  if(document.visibilityState === 'hidden') saveStateNow();
+  if(document.visibilityState === 'hidden'){
+    saveStateNow();
+    // Show elapsed workout time in the tab/Recents title when backgrounded,
+    // so the user can see how long they've been working out without reopening.
+    if(state.workoutTimer && state.workoutTimer.running){
+      const now = Date.now();
+      const ms = state.workoutTimer.elapsedMs + (state.workoutTimer.resumedAt ? now - state.workoutTimer.resumedAt : 0);
+      document.title = `⏱ ${wtFmt(ms)} — Motion Blueprint`;
+    }
+  } else {
+    // Restore the title when the user comes back
+    document.title = 'Motion Blueprint';
+  }
 });
 window.addEventListener('pagehide', saveStateNow);
 
@@ -1500,12 +1564,14 @@ function clearWorkoutState(){
   state.currentPlan = null;
   state.currentDay = null;
   state.blockIndex = 0;
+  state.workoutTimer = { running: false, elapsedMs: 0, resumedAt: null };
   localStorage.setItem(STATE_KEY, JSON.stringify({
     currentPlan: null,
     currentDay: null,
     blockIndex: 0,
     optionChoice: state.optionChoice,
     setLog: state.setLog,
+    workoutTimer: state.workoutTimer,
   }));
 }
 
@@ -1565,6 +1631,7 @@ function renderResumeBanner(){
 function resumeWorkout(){
   renderBlock();
   showScreen('screen-workout');
+  resumeWtTimer();
 }
 
 function openPlan(key){
@@ -1676,6 +1743,7 @@ function startWorkout(planKey, dayIdx){
   saveStateNow();
   renderBlock();
   showScreen('screen-workout');
+  startWtTimer();
 }
 
 function currentDayObj(){
@@ -2001,6 +2069,7 @@ function prevBlock(){
   }
 }
 function exitWorkout(){
+  stopWtTimer();
   showScreen('screen-daylist');
 }
 
@@ -2040,12 +2109,15 @@ function finishWorkout(){
     });
   });
 
+  const durationMs = stopWtTimer();
+
   state.history.unshift({
     id: SessionUtils.generateSessionId(),
     date: new Date().toISOString(),
     plan: PLANS[state.currentPlan].title,
     day: `${day.label} — ${day.name}`,
     doneSets, totalSets,
+    durationMs,
     exercises: exerciseDetails
   });
   saveHistory();
@@ -2058,7 +2130,8 @@ function finishWorkout(){
   Object.keys(state.optionChoice).forEach(k => { if(k.startsWith(day.id + '_')) delete state.optionChoice[k]; });
   clearWorkoutState();
 
-  document.getElementById('complete-summary').textContent = `${day.name} complete. ${doneSets}/${totalSets} sets logged. Recovery starts now.`;
+  const durationTxt = durationMs > 0 ? ` · ${wtFmt(durationMs)}` : '';
+  document.getElementById('complete-summary').textContent = `${day.name} complete. ${doneSets}/${totalSets} sets logged${durationTxt}. Recovery starts now.`;
   showScreen('screen-complete');
 }
 
@@ -2093,7 +2166,7 @@ function renderProgress(){
           <div class="t">${h.day}</div>
           <div class="d">${h.plan} · ${d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})}</div>
         </div>
-        <div class="status">${h.doneSets}/${h.totalSets} sets</div>
+        <div class="status">${h.doneSets}/${h.totalSets} sets${h.durationMs > 0 ? ' · ' + wtFmt(h.durationMs) : ''}</div>
         <button class="session-toggle ${isOpen?'open':''}" onclick="toggleSessionEditor('${h.id}')" aria-label="Edit session">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
         </button>
@@ -2270,6 +2343,108 @@ function importSessionsFile(event){
   };
   reader.onerror = () => showToast('Could not read that file');
   reader.readAsText(file);
+}
+
+/* ============================================================
+   WORKOUT SESSION TIMER
+   ============================================================ */
+let wtInterval = null;
+
+// Format milliseconds as M:SS or H:MM:SS
+function wtFmt(ms){
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if(h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  return `${m}:${String(sec).padStart(2,'0')}`;
+}
+
+function wtTick(){
+  const el = document.getElementById('wt-time');
+  if(!el || !state.workoutTimer) return;
+  const now = Date.now();
+  const ms = state.workoutTimer.elapsedMs +
+    (state.workoutTimer.running && state.workoutTimer.resumedAt ? now - state.workoutTimer.resumedAt : 0);
+  el.textContent = wtFmt(ms);
+}
+
+function _mountWtChip(){
+  const chip = document.getElementById('workout-timer-chip');
+  if(!chip) return;
+  chip.style.display = 'flex';
+  const btn = document.getElementById('wt-btn');
+  if(state.workoutTimer.running){
+    chip.className = 'workout-timer-chip running';
+    btn.textContent = '⏸';
+    btn.setAttribute('aria-label', 'Pause workout timer');
+  } else {
+    chip.className = 'workout-timer-chip paused';
+    btn.textContent = '▷';
+    btn.setAttribute('aria-label', 'Resume workout timer');
+  }
+  wtTick();
+  if(wtInterval) clearInterval(wtInterval);
+  if(state.workoutTimer.running){
+    wtInterval = setInterval(wtTick, 1000);
+  }
+}
+
+// Called when a fresh workout starts — resets and runs the timer.
+function startWtTimer(){
+  if(wtInterval) clearInterval(wtInterval);
+  state.workoutTimer = { running: true, elapsedMs: 0, resumedAt: Date.now() };
+  saveStateNow();
+  _mountWtChip();
+}
+
+// Called when an in-progress workout is resumed from localStorage — mounts
+// the chip in whichever state was last saved (running or paused).
+function resumeWtTimer(){
+  if(!state.workoutTimer) state.workoutTimer = { running: false, elapsedMs: 0, resumedAt: null };
+  // Guard: if running but resumedAt is missing, fix it so wtTick is safe.
+  if(state.workoutTimer.running && !state.workoutTimer.resumedAt){
+    state.workoutTimer.resumedAt = Date.now();
+  }
+  if(wtInterval) clearInterval(wtInterval);
+  _mountWtChip();
+}
+
+// Tap the chip or either button to toggle pause/resume.
+function toggleWorkoutTimer(){
+  if(!state.workoutTimer) return;
+  const now = Date.now();
+  if(state.workoutTimer.running){
+    // Pause: accumulate elapsed and clear the interval
+    const additional = state.workoutTimer.resumedAt ? now - state.workoutTimer.resumedAt : 0;
+    state.workoutTimer.elapsedMs += additional;
+    state.workoutTimer.running = false;
+    state.workoutTimer.resumedAt = null;
+    if(wtInterval){ clearInterval(wtInterval); wtInterval = null; }
+  } else {
+    // Resume: set a new resumedAt and restart the interval
+    state.workoutTimer.running = true;
+    state.workoutTimer.resumedAt = now;
+    wtInterval = setInterval(wtTick, 1000);
+  }
+  saveStateNow();
+  _mountWtChip();
+}
+
+// Stops the timer, hides the chip, restores document.title, and returns
+// the total elapsed milliseconds (for saving in the session history).
+function stopWtTimer(){
+  if(wtInterval){ clearInterval(wtInterval); wtInterval = null; }
+  if(!state.workoutTimer) return 0;
+  const now = Date.now();
+  const additional = (state.workoutTimer.running && state.workoutTimer.resumedAt)
+    ? now - state.workoutTimer.resumedAt : 0;
+  const totalMs = state.workoutTimer.elapsedMs + additional;
+  state.workoutTimer = { running: false, elapsedMs: 0, resumedAt: null };
+  const chip = document.getElementById('workout-timer-chip');
+  if(chip) chip.style.display = 'none';
+  document.title = 'Motion Blueprint';
+  return totalMs;
 }
 
 /* ============================================================
