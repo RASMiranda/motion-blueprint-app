@@ -1,0 +1,29 @@
+name: Create Release
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag name (e.g. v1.2.0)'
+        required: true
+      name:
+        description: 'Release title'
+        required: true
+      body:
+        description: 'Release notes (markdown)'
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag }}" \
+            --target main \
+            --title "${{ inputs.name }}" \
+            --notes "${{ inputs.body }}"
