@@ -142,6 +142,27 @@ test.describe('Motion Blueprint', () => {
     await expect(squatCard.locator('.option-why')).toHaveCount(0);
   });
 
+  test('DB 3-Point Row offers a Barbell Row alternative with its own demo video', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    // Day 2 (Bench Press Focus): Block C holds the Row exercise.
+    await page.locator('#daylist-items .day-card').nth(1).click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+    await page.locator('#workout-next').click(); // A -> B
+    await page.locator('#workout-next').click(); // B -> C
+
+    const rowCard = page.locator('.exercise-card').nth(1);
+    await expect(rowCard.locator('.ex-name')).toContainText('DB 3-Point Row / Barbell Row');
+    await expect(rowCard.locator('.option-toggle button').first()).toContainText('DB 3-Point Row');
+
+    // Default option's demo is the existing DB 3-Point Row video.
+    await expect(rowCard.locator('.ex-video-btn')).toHaveAttribute('href', /Y4KIH1q-yzI/);
+
+    // Selecting Barbell Row swaps in its own demo video.
+    await rowCard.locator('.option-toggle button', { hasText: 'Barbell Row' }).click();
+    await expect(rowCard.locator('.ex-video-btn')).toHaveAttribute('href', /CqLKxG-IpHU/);
+  });
+
   test('warm-up steps show a video preview and demo link', async ({ page }) => {
     await gotoAndSettle(page);
     await page.locator('button.tab-btn[data-tab="screen-warmup-select"]').click();
