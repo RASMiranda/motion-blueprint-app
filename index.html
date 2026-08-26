@@ -2182,6 +2182,10 @@ function renderProgress(){
             <label>Sets done</label>
             <div class="session-readonly-value">${h.doneSets} / ${h.totalSets}</div>
           </div>
+          ${h.durationMs > 0 ? `<div class="session-field">
+            <label>Duration</label>
+            <div class="session-readonly-value">${wtFmt(h.durationMs)}</div>
+          </div>` : ''}
         </div>
         <div class="session-btn-row">
           <button class="session-btn-save" onclick="saveSessionEdit('${h.id}')">Save changes</button>
