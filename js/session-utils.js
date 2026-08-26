@@ -91,12 +91,40 @@
     return { merged, added, skipped };
   }
 
+  // Finds the most recent logged session for a given plan + day (history
+  // is stored newest-first, so the first match wins). Used to pre-fill a
+  // freshly-started workout with last time's numbers. Returns null when
+  // this day has never been logged before.
+  function findLastSessionForDay(history, planTitle, dayLabel) {
+    if (!Array.isArray(history)) return null;
+    return history.find(h => h && h.plan === planTitle && h.day === dayLabel) || null;
+  }
+
+  // Given a matched prior session (or null) and the flat position + name
+  // of an exercise being started fresh, returns the sets logged for that
+  // same exercise last time, or null when there's nothing to pre-fill
+  // from — no prior session, the exercise didn't exist in it yet, or the
+  // name at that position no longer matches (e.g. a different alternative
+  // was selected, or the day's exercise list changed since).
+  //
+  // `flatIndex` mirrors the order finishWorkout() pushes exercises in
+  // (iterating day.blocks then block.exercises), so it lines up directly
+  // with position in the stored `exercises` array.
+  function findPriorSets(lastSession, flatIndex, exerciseName) {
+    if (!lastSession || !Array.isArray(lastSession.exercises)) return null;
+    const prev = lastSession.exercises[flatIndex];
+    if (!prev || prev.name !== exerciseName || !Array.isArray(prev.sets)) return null;
+    return prev.sets;
+  }
+
   return {
     EXPORT_FORMAT_VERSION,
     generateSessionId,
     buildExportPayload,
     buildExportFilename,
     parseImportPayload,
-    mergeImportedSessions
+    mergeImportedSessions,
+    findLastSessionForDay,
+    findPriorSets
   };
 });

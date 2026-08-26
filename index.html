@@ -1731,13 +1731,34 @@ function startWorkout(planKey, dayIdx){
   state.currentDay = dayIdx;
   state.blockIndex = 0;
   const day = PLANS[planKey].days[dayIdx];
+  // Pre-fill from the most recent logged session of this same day, so a
+  // fresh start isn't blank — last time's weights are the natural
+  // reference point for progressive overload. Only ever used to seed a
+  // set log that doesn't exist yet (a genuinely fresh start); an
+  // in-progress session being resumed keeps whatever's already logged.
+  const lastSession = SessionUtils.findLastSessionForDay(
+    state.history, PLANS[planKey].title, `${day.label} — ${day.name}`
+  );
   // init set logs
+  let flatIdx = 0;
   day.blocks.forEach((block, bi) => {
     block.exercises.forEach((exc, ei) => {
       const id = exId(day.id, bi, ei);
       if(!state.setLog[id]){
-        state.setLog[id] = Array.from({length: exc.sets}, () => ({weight:'', reps:'', rpe:'', checked:false}));
+        const chosenIdx = state.optionChoice[id] || 0;
+        const performedName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
+        const priorSets = SessionUtils.findPriorSets(lastSession, flatIdx, performedName);
+        state.setLog[id] = Array.from({length: exc.sets}, (_, si) => {
+          const prev = priorSets && priorSets[si];
+          return {
+            weight: prev ? prev.weight : '',
+            reps: prev ? prev.reps : '',
+            rpe: prev ? prev.rpe : '',
+            checked: false
+          };
+        });
       }
+      flatIdx++;
     });
   });
   saveStateNow();

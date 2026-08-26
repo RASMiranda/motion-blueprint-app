@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.0 (2026-08-26)
+
+### New
+- ✅ **Starting a workout pre-fills last time's numbers** — weight, reps, and RPE for each set are pre-filled from the most recent logged session of that same day, matched per exercise (so switching to an alternative exercise doesn't pull mismatched numbers). Fully editable, and the "done" checkmark always starts unchecked. Resuming an in-progress session is unaffected — only a genuinely fresh start pre-fills. [#32](https://github.com/RASMiranda/motion-blueprint-app/issues/32)
+
 ## v1.2.0 (2026-08-26)
 
 ### New

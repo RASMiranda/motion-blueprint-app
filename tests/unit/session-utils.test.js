@@ -141,3 +141,55 @@ test('mergeImportedSessions', async (t) => {
     assert.equal(second.skipped, 1);
   });
 });
+
+test('findLastSessionForDay', async (t) => {
+  const history = [
+    { id: 'sess_3', date: '2026-06-10', plan: '3-Day Total Body', day: 'Day 1 — Squat Focus', exercises: [] },
+    { id: 'sess_2', date: '2026-06-05', plan: '3-Day Total Body', day: 'Day 2 — Bench Focus', exercises: [] },
+    { id: 'sess_1', date: '2026-06-01', plan: '3-Day Total Body', day: 'Day 1 — Squat Focus', exercises: [] }
+  ];
+
+  await t.test('returns the newest matching entry for the same plan + day', () => {
+    const found = SessionUtils.findLastSessionForDay(history, '3-Day Total Body', 'Day 1 — Squat Focus');
+    assert.equal(found.id, 'sess_3');
+  });
+
+  await t.test('returns null when that day has never been logged', () => {
+    assert.equal(SessionUtils.findLastSessionForDay(history, '3-Day Total Body', 'Day 3 — Deadlift Focus'), null);
+  });
+
+  await t.test('does not match across different plans with the same day label', () => {
+    assert.equal(SessionUtils.findLastSessionForDay(history, '4-Day Upper/Lower', 'Day 1 — Squat Focus'), null);
+  });
+
+  await t.test('returns null for an empty or missing history', () => {
+    assert.equal(SessionUtils.findLastSessionForDay([], '3-Day Total Body', 'Day 1 — Squat Focus'), null);
+    assert.equal(SessionUtils.findLastSessionForDay(undefined, '3-Day Total Body', 'Day 1 — Squat Focus'), null);
+  });
+});
+
+test('findPriorSets', async (t) => {
+  const lastSession = {
+    exercises: [
+      { name: 'Back Squat', sets: [{ weight: '135', reps: '8', rpe: '7' }, { weight: '135', reps: '8', rpe: '8' }] },
+      { name: 'Box Jumps', sets: [{ weight: '', reps: '10', rpe: '' }] }
+    ]
+  };
+
+  await t.test('returns the sets logged last time for the exercise at that position', () => {
+    const sets = SessionUtils.findPriorSets(lastSession, 0, 'Back Squat');
+    assert.deepEqual(sets, lastSession.exercises[0].sets);
+  });
+
+  await t.test('returns null when there is no prior session', () => {
+    assert.equal(SessionUtils.findPriorSets(null, 0, 'Back Squat'), null);
+  });
+
+  await t.test('returns null when the exercise name at that position does not match (e.g. a different alternative was picked last time)', () => {
+    assert.equal(SessionUtils.findPriorSets(lastSession, 0, 'Front Squat'), null);
+  });
+
+  await t.test('returns null when the position is past the end of the prior session (a new exercise)', () => {
+    assert.equal(SessionUtils.findPriorSets(lastSession, 5, 'Farmer Carry'), null);
+  });
+});
