@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.3.1 (2026-08-26)
+
+### Content accuracy
+- ✅ **Barbell Row alternative for DB 3-Point Row** — Day 2 · Bench Press Focus (3-Day Total Body) and Day 2 · Upper Body (4-Day Upper/Lower) now offer Barbell Row as a swap option (8 reps @ 7 RPE), with its own demo video.
+
 ## v1.3.0 (2026-08-26)
 
 ### New
