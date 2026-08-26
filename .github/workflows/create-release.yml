@@ -1,29 +1,124 @@
 name: Create Release
+
+# Manually creates a GitHub Release for this repo. Designed to be safe to
+# re-run: it validates the tag, refuses to clobber an existing tag/release,
+# and only ever runs one at a time (via the concurrency group below).
+#
+# All inputs are optional:
+#   tag        - defaults to "v<version from package.json>"
+#   name       - defaults to the tag
+#   body       - defaults to the matching "## <tag> (...)" section pulled
+#                out of CHANGELOG.md, and if that's not found either, falls
+#                back to GitHub's auto-generated release notes
+#   prerelease - defaults to false
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag name (e.g. v1.2.0)'
-        required: true
+        description: 'Tag name (e.g. v1.3.0). Leave blank to use the version in package.json'
+        required: false
       name:
-        description: 'Release title'
-        required: true
+        description: 'Release title. Leave blank to reuse the tag'
+        required: false
       body:
-        description: 'Release notes (markdown)'
-        required: true
+        description: 'Release notes (markdown). Leave blank to pull the matching CHANGELOG.md section, or auto-generate from commits if that is not found'
+        required: false
+      prerelease:
+        description: 'Mark as a pre-release'
+        type: boolean
+        default: false
+
+concurrency:
+  group: create-release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      INPUT_TAG: ${{ inputs.tag }}
+      INPUT_NAME: ${{ inputs.name }}
+      INPUT_BODY: ${{ inputs.body }}
+      INPUT_PRERELEASE: ${{ inputs.prerelease }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve and validate tag
+        id: vars
+        run: |
+          TAG="$INPUT_TAG"
+          if [ -z "$TAG" ]; then
+            TAG="v$(node -p "require('./package.json').version")"
+          fi
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::'$TAG' isn't a valid semver tag (expected vX.Y.Z)"
+            exit 1
+          fi
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag '$TAG' already exists"
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release '$TAG' already exists"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve title and notes
+        id: notes
+        env:
+          TAG: ${{ steps.vars.outputs.tag }}
+        run: |
+          TITLE="$INPUT_NAME"
+          [ -z "$TITLE" ] && TITLE="$TAG"
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+
+          BODY="$INPUT_BODY"
+          if [ -z "$BODY" ] && [ -f CHANGELOG.md ]; then
+            BODY=$(awk -v tag="$TAG" '
+              $0 ~ "^## .*" tag {found=1; next}
+              found && /^## / {exit}
+              found {print}
+            ' CHANGELOG.md)
+          fi
+
+          if [ -z "$BODY" ]; then
+            echo "use_generate_notes=true" >> "$GITHUB_OUTPUT"
+          else
+            {
+              echo "body<<RELEASE_BODY_EOF"
+              echo "$BODY"
+              echo "RELEASE_BODY_EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         env:
-          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.vars.outputs.tag }}
+          RELEASE_TITLE: ${{ steps.notes.outputs.title }}
+          RELEASE_BODY: ${{ steps.notes.outputs.body }}
+          USE_GENERATE_NOTES: ${{ steps.notes.outputs.use_generate_notes }}
         run: |
-          gh release create "${{ inputs.tag }}" \
-            --target main \
-            --title "${{ inputs.name }}" \
-            --notes "${{ inputs.body }}"
+          ARGS=(--target main --title "$RELEASE_TITLE")
+          [ "$INPUT_PRERELEASE" = "true" ] && ARGS+=(--prerelease)
+          if [ "$USE_GENERATE_NOTES" = "true" ]; then
+            ARGS+=(--generate-notes)
+          else
+            printf '%s' "$RELEASE_BODY" > /tmp/release-notes.md
+            ARGS+=(--notes-file /tmp/release-notes.md)
+          fi
+          gh release create "$TAG" "${ARGS[@]}"
+
+      - name: Summary
+        env:
+          TAG: ${{ steps.vars.outputs.tag }}
+        run: |
+          {
+            echo "### Released $TAG :rocket:"
+            echo "https://github.com/${{ github.repository }}/releases/tag/$TAG"
+          } >> "$GITHUB_STEP_SUMMARY"
