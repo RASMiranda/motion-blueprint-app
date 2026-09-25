@@ -163,6 +163,58 @@ test.describe('Motion Blueprint', () => {
     await expect(rowCard.locator('.ex-video-btn')).toHaveAttribute('href', /CqLKxG-IpHU/);
   });
 
+  test('every exercise offers a Custom option, even ones with no documented alternative', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    // Block D1 (Hamstrings) has no options array at all in PLANS.
+    for (let i = 0; i < 3; i++) {
+      await page.locator('#workout-next').click();
+    }
+    const hamstringCard = page.locator('.exercise-card').first();
+    await expect(hamstringCard.locator('.ex-name')).toContainText('Stability Ball Hamstring Curl Series');
+    await expect(hamstringCard.locator('.option-toggle button')).toHaveCount(2);
+    await expect(hamstringCard.locator('.custom-exercise-input')).toHaveCount(0);
+
+    await hamstringCard.locator('.option-toggle button', { hasText: 'Custom' }).click();
+    const customInput = hamstringCard.locator('.custom-exercise-input input');
+    await expect(customInput).toBeVisible();
+    await customInput.fill('Lying Leg Curl Machine');
+    await customInput.blur(); // onchange (not oninput) is what re-renders the video row
+
+    // No video mapped for a made-up name — falls back gracefully, and
+    // reflects exactly what was typed rather than the original exercise's
+    // own video (which would misleadingly suggest that's what's logged).
+    await expect(hamstringCard.locator('.ex-media')).toContainText('Lying Leg Curl Machine');
+    await expect(hamstringCard.locator('.ex-video-btn')).toContainText('No demo linked');
+  });
+
+  test('logging a Custom exercise name records it in session history', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    const powerCard = page.locator('.exercise-card').first();
+    await expect(powerCard.locator('.ex-name')).toContainText('Box Jumps / Squat Jumps');
+    await powerCard.locator('.option-toggle button', { hasText: 'Custom' }).click();
+    await powerCard.locator('.custom-exercise-input input').fill('Sled Push');
+
+    for (let i = 0; i < 10; i++) {
+      if (await page.locator('#screen-complete').evaluate(el => el.classList.contains('active'))) break;
+      await page.locator('#workout-next').click();
+    }
+    await expect(page.locator('#screen-complete')).toBeVisible();
+    await page.locator('.btn-primary', { hasText: 'Back to Home' }).click();
+
+    await page.locator('button.tab-btn[data-tab="screen-progress"]').click();
+    const firstCard = page.locator('#progress-list .session-card').first();
+    await firstCard.locator('.session-toggle').click();
+    await expect(page.locator('.session-log-ex-name').first()).toContainText('Sled Push');
+  });
+
   test('warm-up steps show a video preview and demo link', async ({ page }) => {
     await gotoAndSettle(page);
     await page.locator('button.tab-btn[data-tab="screen-warmup-select"]').click();
