@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.4.0 (2026-09-25)
+
+### New
+- ✅ **Custom exercise option on every exercise card** — alongside any official alternatives, every exercise now has a "Custom" toggle that reveals a text field for typing in whatever's actually being done instead. Applies even to exercises with no documented alternative at all. The typed name is looked up against the demo video library on the chance it matches, is what gets logged in session history, and is matched by name for weight/reps/RPE pre-fill on a future visit to the same day.
+
 ## v1.3.1 (2026-08-26)
 
 ### Content accuracy

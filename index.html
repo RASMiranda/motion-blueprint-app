@@ -564,6 +564,18 @@
     margin: -4px 0 14px 0;
   }
   .option-why b { color: var(--ink); }
+  .custom-exercise-input { margin: -4px 0 14px 0; }
+  .custom-exercise-input input {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    color: var(--ink);
+    font-size: 13.5px;
+    padding: 10px 12px;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
 
   .exercise-card {
     background: var(--bg-card);
@@ -1492,6 +1504,7 @@ function loadState(){
     currentDay: saved.currentDay !== undefined ? saved.currentDay : null,
     blockIndex: saved.blockIndex || 0,
     optionChoice: saved.optionChoice || {},
+    customExerciseName: saved.customExerciseName || {},
     setLog: saved.setLog || {},
     history: JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'),
     workoutTimer: saved.workoutTimer || { running: false, elapsedMs: 0, resumedAt: null },
@@ -1522,6 +1535,7 @@ function saveStateNow(){
       currentDay: state.currentDay,
       blockIndex: state.blockIndex,
       optionChoice: state.optionChoice,
+      customExerciseName: state.customExerciseName,
       setLog: state.setLog,
       workoutTimer: state.workoutTimer,
     };
@@ -1557,9 +1571,9 @@ window.addEventListener('pagehide', saveStateNow);
 // Clears the "resume this workout" pointer specifically (which plan/day/
 // block was active) — used once a session is completed or explicitly
 // exited, so a finished workout doesn't linger and get offered as
-// "resume" next time. Does NOT touch setLog/optionChoice, since those
-// hold per-day exercise data that should only be cleared for the specific
-// day that was actually finished (handled separately in finishWorkout).
+// "resume" next time. Does NOT touch setLog/optionChoice/customExerciseName,
+// since those hold per-day exercise data that should only be cleared for the
+// specific day that was actually finished (handled separately in finishWorkout).
 function clearWorkoutState(){
   state.currentPlan = null;
   state.currentDay = null;
@@ -1570,6 +1584,7 @@ function clearWorkoutState(){
     currentDay: null,
     blockIndex: 0,
     optionChoice: state.optionChoice,
+    customExerciseName: state.customExerciseName,
     setLog: state.setLog,
     workoutTimer: state.workoutTimer,
   }));
@@ -1745,9 +1760,7 @@ function startWorkout(planKey, dayIdx){
     block.exercises.forEach((exc, ei) => {
       const id = exId(day.id, bi, ei);
       if(!state.setLog[id]){
-        const chosenIdx = state.optionChoice[id] || 0;
-        const performedName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
-        const priorSets = SessionUtils.findPriorSets(lastSession, flatIdx, performedName);
+        const priorSets = SessionUtils.findPriorSets(lastSession, flatIdx, performedNameFor(exc, id));
         state.setLog[id] = Array.from({length: exc.sets}, (_, si) => {
           const prev = priorSets && priorSets[si];
           return {
@@ -1769,6 +1782,30 @@ function startWorkout(planKey, dayIdx){
 
 function currentDayObj(){
   return PLANS[state.currentPlan].days[state.currentDay];
+}
+
+// Resolves the exercise name actually being performed for exercise `id`:
+// the selected official alternative's label, a typed-in custom name
+// (state.optionChoice[id] === 'custom'), or the exercise's own default
+// name. Falls back to exc.name when custom mode has no text typed yet, so
+// callers that need a name to log or match against (history, pre-fill)
+// always get a usable one. Shared by startWorkout()'s pre-fill lookup and
+// finishWorkout()'s logged name.
+function performedNameFor(exc, id){
+  const chosen = state.optionChoice[id];
+  if(chosen === 'custom'){
+    return (state.customExerciseName[id] || '').trim() || exc.name;
+  }
+  const idx = (typeof chosen === 'number') ? chosen : 0;
+  return exc.options ? exc.options[idx].l.split('(')[0].trim() : exc.name;
+}
+
+// Escapes text for safe use inside an HTML attribute/text position.
+// Only needed for the one place user-typed text (a custom exercise name)
+// gets rendered back into innerHTML — everything else on exercise cards
+// is fixed, developer-authored content.
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 function renderBlock(){
@@ -1812,20 +1849,34 @@ function renderBlock(){
     const card = document.createElement('div');
     card.className = 'exercise-card';
 
-    let optHtml = '';
-    if(exc.options){
-      const chosen = state.optionChoice[id] || 0;
-      optHtml = `<div class="option-toggle">` + exc.options.map((o,oi)=>
-        `<button class="${oi===chosen?'active':''}" onclick="chooseOption('${id}',${oi})">${o.l.split('(')[0].trim()}</button>`
-      ).join('') + `</div>`;
-      // Why you'd pick the currently-selected alternative — straight from
-      // the source PDF's own "choose this option if..." guidance. Only
-      // shown when this specific option has one (the default/first option
-      // in a pair usually doesn't need a reason to pick it).
-      const chosenWhy = exc.options[chosen].w;
+    // Every exercise gets a toggle for its official alternative(s), if any,
+    // plus a "Custom" choice so a swap the program doesn't list is still
+    // just as first-class — no equipment for this or its official
+    // alternative? Type in whatever's actually being done instead.
+    const chosen = state.optionChoice[id];
+    const isCustom = chosen === 'custom';
+    const activeIdx = (!isCustom && typeof chosen === 'number') ? chosen : 0;
+    const officialButtons = exc.options
+      ? exc.options.map((o,oi)=>
+          `<button class="${(!isCustom && oi===activeIdx)?'active':''}" onclick="chooseOption('${id}',${oi})">${escapeHtml(o.l.split('(')[0].trim())}</button>`
+        ).join('')
+      : `<button class="${!isCustom?'active':''}" onclick="chooseOption('${id}',0)">${escapeHtml(exc.name.split('/')[0].trim())}</button>`;
+    let optHtml = `<div class="option-toggle">` + officialButtons +
+      `<button class="${isCustom?'active':''}" onclick="chooseOption('${id}','custom')">Custom</button>` +
+      `</div>`;
+    // Why you'd pick the currently-selected official alternative — straight
+    // from the source PDF's own "choose this option if..." guidance. Only
+    // shown when this specific option has one, and never for Custom (that
+    // swap has no program guidance behind it — nothing is fabricated).
+    if(!isCustom && exc.options){
+      const chosenWhy = exc.options[activeIdx].w;
       if(chosenWhy){
         optHtml += `<div class="option-why"><b>Why this one:</b> ${chosenWhy}</div>`;
       }
+    }
+    if(isCustom){
+      const customVal = state.customExerciseName[id] || '';
+      optHtml += `<div class="custom-exercise-input"><input type="text" placeholder="Type the exercise you're doing instead" value="${escapeHtml(customVal)}" onchange="updateCustomExerciseName('${id}', this.value)"></div>`;
     }
 
     const setsWrap = document.createElement('div');
@@ -1847,23 +1898,34 @@ function renderBlock(){
     // Media row: image preview frame (YouTube thumbnail) + direct video link.
     // Uses the currently-selected option name if this exercise has swap options,
     // otherwise the exercise's own name, matched against the hardcoded VIDEO_MAP
-    // pulled directly from the source PDF's own hyperlinks.
-    const chosenIdx = state.optionChoice[id] || 0;
-    const searchName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
-    // Try the full name first — several no-option exercises have a "/" as
-    // part of their own compound name (e.g. "2KB/2DB Thruster", "2KB/2DB
-    // Farmer Carry"), and VIDEO_MAP has an exact entry for the full name.
-    // Only fall back to the pre-slash prefix for the rare case with no
-    // single VIDEO_MAP entry of its own (e.g. "KB/DB Chain: Clean → ..."
-    // falls back to "KB", partial-matching the "KB Chain" demo). Trying
-    // the shortened prefix *first* was the bug: "2KB/2DB Thruster" cut
-    // down to "2KB" partial-matched the earlier "2KB/2DB Farmer Carry"
-    // entry instead of its own exact video.
-    const videoId = lookupVideo(searchName) || lookupVideo(exc.name.split('/')[0].trim());
+    // pulled directly from the source PDF's own hyperlinks. A typed-in Custom
+    // name is looked up the same way, on the chance it happens to match a
+    // known exercise — but never falls back to the *default* exercise's
+    // video, which would misleadingly suggest that's what's being logged.
+    let searchName, videoId;
+    if(isCustom){
+      const customName = (state.customExerciseName[id] || '').trim();
+      searchName = customName || 'Type an exercise name above';
+      videoId = customName ? lookupVideo(customName) : null;
+    } else {
+      searchName = exc.options ? exc.options[activeIdx].l.split('(')[0].trim() : exc.name;
+      // Try the full name first — several no-option exercises have a "/" as
+      // part of their own compound name (e.g. "2KB/2DB Thruster", "2KB/2DB
+      // Farmer Carry"), and VIDEO_MAP has an exact entry for the full name.
+      // Only fall back to the pre-slash prefix for the rare case with no
+      // single VIDEO_MAP entry of its own (e.g. "KB/DB Chain: Clean → ..."
+      // falls back to "KB", partial-matching the "KB Chain" demo). Trying
+      // the shortened prefix *first* was the bug: "2KB/2DB Thruster" cut
+      // down to "2KB" partial-matched the earlier "2KB/2DB Farmer Carry"
+      // entry instead of its own exact video.
+      videoId = lookupVideo(searchName) || lookupVideo(exc.name.split('/')[0].trim());
+    }
 
     const mediaRow = document.createElement('div');
     mediaRow.className = 'ex-media';
-    mediaRow.innerHTML = buildMediaRowHtml(searchName, videoId);
+    // searchName can be user-typed (Custom mode) — escape before it lands
+    // in innerHTML, unlike the trusted developer-authored names elsewhere.
+    mediaRow.innerHTML = buildMediaRowHtml(escapeHtml(searchName), videoId);
 
     card.innerHTML = `
       <div class="ex-name">${exc.name}</div>
@@ -2061,6 +2123,11 @@ function chooseOption(id, idx){
   saveStateNow();
   renderBlock();
 }
+function updateCustomExerciseName(id, val){
+  state.customExerciseName[id] = val;
+  saveStateNow();
+  renderBlock();
+}
 function updateSet(id, idx, field, val){
   state.setLog[id][idx][field] = val;
   saveState();
@@ -2113,10 +2180,10 @@ function finishWorkout(){
       totalSets += log.length;
       doneSets += log.filter(s => s.checked).length;
 
-      // Record which option was selected (e.g. "Squat Jumps" vs "Box Jumps")
-      // so the saved history reflects what was actually performed.
-      const chosenIdx = state.optionChoice[id] || 0;
-      const performedName = exc.options ? exc.options[chosenIdx].l.split('(')[0].trim() : exc.name;
+      // Record which option was selected (e.g. "Squat Jumps" vs "Box Jumps",
+      // or a typed-in Custom name) so the saved history reflects what was
+      // actually performed.
+      const performedName = performedNameFor(exc, id);
 
       exerciseDetails.push({
         name: performedName,
@@ -2150,6 +2217,7 @@ function finishWorkout(){
   // also offered as something to resume.
   Object.keys(state.setLog).forEach(k => { if(k.startsWith(day.id + '_')) delete state.setLog[k]; });
   Object.keys(state.optionChoice).forEach(k => { if(k.startsWith(day.id + '_')) delete state.optionChoice[k]; });
+  Object.keys(state.customExerciseName).forEach(k => { if(k.startsWith(day.id + '_')) delete state.customExerciseName[k]; });
   clearWorkoutState();
 
   const durationTxt = durationMs > 0 ? ` · ${wtFmt(durationMs)}` : '';
