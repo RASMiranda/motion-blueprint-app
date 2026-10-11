@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.2 (2026-10-11)
+
+### Improved
+- ✅ **Tidier workout header** — the back button, timer and Cancel button are now spread across the top of the workout screen, with the day and block counter on its own line below, instead of being squished together.
+
 ## v1.7.1 (2026-10-11)
 
 ### Improved
