@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.6.0 (2026-10-11)
+
+### New
+- ✅ **Swipe to change blocks** — during a session, swipe left for the next block and swipe right to go back, alongside the Next/Back buttons. Swiping never finishes the workout; "Finish Session" stays an explicit tap.
+
 ## v1.5.0 (2026-10-11)
 
 ### New
