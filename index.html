@@ -2160,6 +2160,7 @@ function nextBlock(){
     saveStateNow();
     renderBlock();
     document.getElementById('screen-workout').scrollTop = 0;
+    slideBlockIn(1);
   } else {
     finishWorkout();
   }
@@ -2169,32 +2170,68 @@ function prevBlock(){
     state.blockIndex--;
     saveStateNow();
     renderBlock();
+    slideBlockIn(-1);
   }
 }
+// Slides the freshly rendered block in from the side it was navigated
+// towards (dir 1 = from the right, -1 = from the left). Skipped for users
+// who prefer reduced motion.
+function slideBlockIn(dir, fromPx){
+  const el = document.getElementById('workout-block-content');
+  if(!el.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const x = (fromPx != null ? fromPx : dir * 48) + 'px';
+  el.animate(
+    [{ transform: `translateX(${x})`, opacity: 0.2 }, { transform: 'translateX(0)', opacity: 1 }],
+    { duration: 220, easing: 'ease-out' }
+  );
+}
+
 // Swipe left = next block, swipe right = previous block, on the workout
-// screen. Ignores mostly-vertical drags (scrolling), short drags, and
-// gestures starting on form fields. Swiping never finishes the session —
-// on the last block "Finish Session" stays an explicit button tap.
+// screen. The block follows the finger while dragging, then slides in (or
+// springs back if the swipe was too short). Ignores mostly-vertical drags
+// (scrolling) and gestures starting on form fields. Swiping never finishes
+// the session — on the last block "Finish Session" stays an explicit tap.
 (function(){
-  const SWIPE_MIN_X = 60, SWIPE_MAX_Y_RATIO = 0.6;
-  let start = null;
+  const SWIPE_MIN_X = 60, SWIPE_MAX_Y_RATIO = 0.6, DRAG_DAMPING = 0.5;
+  let start = null, dragging = false;
   const el = document.getElementById('screen-workout');
+  const content = document.getElementById('workout-block-content');
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const isHorizontal = (dx, dy) => Math.abs(dx) >= SWIPE_MIN_X && Math.abs(dy) <= Math.abs(dx) * SWIPE_MAX_Y_RATIO;
+  const canMove = dx => dx < 0 ? state.blockIndex < currentDayObj().blocks.length - 1 : state.blockIndex > 0;
+  const reset = () => { content.style.transform = ''; content.style.opacity = ''; content.style.transition = ''; };
+
   el.addEventListener('touchstart', e => {
     if(e.touches.length !== 1 || e.target.closest('input, textarea, select')){ start = null; return; }
     start = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    dragging = false;
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if(!start || reduced()) return;
+    const dx = e.touches[0].clientX - start.x, dy = e.touches[0].clientY - start.y;
+    if(!dragging && !(Math.abs(dx) > 12 && Math.abs(dy) <= Math.abs(dx) * SWIPE_MAX_Y_RATIO)) return;
+    dragging = true;
+    if(!canMove(dx)){ reset(); return; }
+    content.style.transform = `translateX(${dx * DRAG_DAMPING}px)`;
   }, { passive: true });
   el.addEventListener('touchend', e => {
     if(!start) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - start.x, dy = t.clientY - start.y;
-    start = null;
-    if(Math.abs(dx) < SWIPE_MIN_X || Math.abs(dy) > Math.abs(dx) * SWIPE_MAX_Y_RATIO) return;
-    if(dx < 0){
-      if(state.blockIndex < currentDayObj().blocks.length - 1) nextBlock();
-    } else {
-      prevBlock();
+    const wasDragging = dragging;
+    start = null; dragging = false;
+    const dragOffset = wasDragging && content.style.transform ? dx * DRAG_DAMPING : 0;
+    reset();
+    if(isHorizontal(dx, dy) && canMove(dx)){
+      const dir = dx < 0 ? 1 : -1;
+      if(dir === 1) nextBlock(); else prevBlock();
+      slideBlockIn(dir, dragOffset ? dragOffset + dir * 24 : null);
+    } else if(dragOffset && content.animate && !reduced()){
+      content.animate([{ transform: `translateX(${dragOffset}px)` }, { transform: 'translateX(0)' }],
+        { duration: 180, easing: 'ease-out' });
     }
   }, { passive: true });
+  el.addEventListener('touchcancel', () => { start = null; dragging = false; reset(); }, { passive: true });
 })();
 function exitWorkout(){
   stopWtTimer();

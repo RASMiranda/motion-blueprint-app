@@ -675,4 +675,28 @@ test.describe('Motion Blueprint', () => {
     await swipe(200, 180); // too short: ignored
     expect(await idx()).toBe(0);
   });
+
+  test('swiping animates the block change and leaves no stuck transform', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    const result = await page.evaluate(async () => {
+      const el = document.getElementById('screen-workout');
+      const content = document.getElementById('workout-block-content');
+      const mk = x => new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 });
+      el.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [mk(300)], changedTouches: [mk(300)] }));
+      el.dispatchEvent(new TouchEvent('touchmove', { bubbles: true, touches: [mk(200)], changedTouches: [mk(200)] }));
+      const dragTransform = content.style.transform;
+      el.dispatchEvent(new TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [mk(100)] }));
+      const animating = content.getAnimations().length > 0;
+      await new Promise(r => setTimeout(r, 400));
+      return { dragTransform, animating, after: content.style.transform, block: state.blockIndex };
+    });
+    expect(result.dragTransform).toContain('translateX');
+    expect(result.animating).toBe(true);
+    expect(result.after).toBe('');
+    expect(result.block).toBe(1);
+  });
 });
