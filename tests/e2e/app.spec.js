@@ -650,4 +650,29 @@ test.describe('Motion Blueprint', () => {
     await expect(page.locator('#workout-timer-chip')).toBeVisible();
     await expect(page.locator('#workout-timer-chip')).toHaveClass(/running/);
   });
+
+  test('swiping left/right on the workout screen moves to the next/previous block', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    const swipe = (fromX, toX) => page.evaluate(([a, b]) => {
+      const el = document.getElementById('screen-workout');
+      const mk = x => new Touch({ identifier: 1, target: el, clientX: x, clientY: 300 });
+      el.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [mk(a)], changedTouches: [mk(a)] }));
+      el.dispatchEvent(new TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [mk(b)] }));
+    }, [fromX, toX]);
+    const idx = () => page.evaluate(() => state.blockIndex);
+
+    expect(await idx()).toBe(0);
+    await swipe(300, 100);
+    expect(await idx()).toBe(1);
+    await swipe(100, 300);
+    expect(await idx()).toBe(0);
+    await swipe(100, 300); // already at first block: stays put
+    expect(await idx()).toBe(0);
+    await swipe(200, 180); // too short: ignored
+    expect(await idx()).toBe(0);
+  });
 });

@@ -2171,6 +2171,31 @@ function prevBlock(){
     renderBlock();
   }
 }
+// Swipe left = next block, swipe right = previous block, on the workout
+// screen. Ignores mostly-vertical drags (scrolling), short drags, and
+// gestures starting on form fields. Swiping never finishes the session —
+// on the last block "Finish Session" stays an explicit button tap.
+(function(){
+  const SWIPE_MIN_X = 60, SWIPE_MAX_Y_RATIO = 0.6;
+  let start = null;
+  const el = document.getElementById('screen-workout');
+  el.addEventListener('touchstart', e => {
+    if(e.touches.length !== 1 || e.target.closest('input, textarea, select')){ start = null; return; }
+    start = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if(!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x, dy = t.clientY - start.y;
+    start = null;
+    if(Math.abs(dx) < SWIPE_MIN_X || Math.abs(dy) > Math.abs(dx) * SWIPE_MAX_Y_RATIO) return;
+    if(dx < 0){
+      if(state.blockIndex < currentDayObj().blocks.length - 1) nextBlock();
+    } else {
+      prevBlock();
+    }
+  }, { passive: true });
+})();
 function exitWorkout(){
   stopWtTimer();
   showScreen('screen-daylist');
