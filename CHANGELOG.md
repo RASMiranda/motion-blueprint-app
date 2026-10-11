@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.5.0 (2026-10-11)
+
+### New
+- ✅ **Cancel an in-progress workout** — a Cancel button in the workout top bar lets you abandon a session you don't want to finish. After a Discard/Keep confirmation, the day's logged sets and choices are thrown away, the "In progress" resume banner disappears, and nothing is saved to your history.
+
 ## v1.4.0 (2026-09-25)
 
 ### New
