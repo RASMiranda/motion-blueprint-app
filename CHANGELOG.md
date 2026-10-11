@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.0 (2026-10-11)
+
+### New
+- ✅ **Swipe animations** — workout blocks now follow your finger while you swipe, slide in from the side when you change blocks (swipe or Next/Back), and spring back if the swipe was too short. Respects your device's reduced-motion setting.
+
 ## v1.6.0 (2026-10-11)
 
 ### New
