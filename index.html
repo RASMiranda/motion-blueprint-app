@@ -834,6 +834,19 @@
     max-width: 260px; line-height: 1.5;
   }
 
+  /* ---------- Workout top bar layout ---------- */
+  #screen-workout .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "back chip cancel" "count count count";
+    align-items: center;
+    gap: 12px 10px;
+  }
+  #screen-workout .topbar .back { grid-area: back; }
+  #screen-workout .topbar .workout-timer-chip { grid-area: chip; justify-self: center; }
+  #screen-workout .topbar #workout-block-count { grid-area: count; text-align: center; }
+  #screen-workout .topbar .workout-cancel-btn { grid-area: cancel; }
+
   /* ---------- Workout session timer chip ---------- */
   .workout-timer-chip {
     display: flex; align-items: center; gap: 7px;
