@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.7.1 (2026-10-11)
+
+### Improved
+- ✅ **Roomier workout screen** — more breathing room between the block label, exercise title, option toggle, demo row and set rows, so the workout card is easier to read and tap.
+
 ## v1.7.0 (2026-10-11)
 
 ### New
