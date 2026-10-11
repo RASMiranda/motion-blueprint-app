@@ -47,6 +47,26 @@ test.describe('Motion Blueprint', () => {
     await expect(page.locator('.plan-card', { hasText: 'Upper / Lower Blueprint' })).toBeVisible();
   });
 
+  test('cancelling an in-progress workout discards it without logging', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await page.locator('.set-row .check').first().click();
+
+    // "Keep" dismisses the confirm and stays in the workout.
+    await page.locator('#workout-cancel-btn').click();
+    await page.locator('#cancel-workout-no').click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+
+    await page.locator('#workout-cancel-btn').click();
+    await page.locator('#cancel-workout-yes').click();
+    await expect(page.locator('#screen-home')).toBeVisible();
+    await expect(page.locator('.resume-banner')).toHaveCount(0);
+
+    const history = await page.evaluate(() => state.history.length);
+    expect(history).toBe(0);
+  });
+
   test('day-select cards stay a consistent width regardless of title length', async ({ page }) => {
     // Regression test: .day-card is a <button> with display:flex but no
     // explicit width, so it used to shrink-wrap to its own title text —
