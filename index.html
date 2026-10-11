@@ -435,6 +435,12 @@
   }
   .delete-confirm .confirm-yes { background: #e35b5b; color: #fff; }
   .delete-confirm .confirm-no { background: var(--bg-elevated); color: var(--ink-dim); }
+  .workout-cancel-btn {
+    border: none; background: rgba(227,91,91,0.12); color: #e35b5b;
+    padding: 7px 12px; border-radius: 9px; font-size: 12.5px; font-weight: 700;
+    margin-left: auto;
+  }
+  .workout-cancel-btn:active { background: rgba(227,91,91,0.22); }
 
   /* ---------- Progress screen: export/import sessions (data migration) ---------- */
   .io-hint {
@@ -1124,6 +1130,12 @@
         <button class="wt-btn" id="wt-btn" aria-label="Pause timer" onclick="event.stopPropagation();toggleWorkoutTimer()">⏸</button>
       </div>
       <div style="font-size:12px;color:var(--ink-faint);font-weight:700;" id="workout-block-count"></div>
+      <button class="workout-cancel-btn" id="workout-cancel-btn" onclick="showCancelWorkoutConfirm()" aria-label="Cancel workout">Cancel</button>
+    </div>
+    <div class="delete-confirm" id="cancel-workout-confirm">
+      <p>Cancel this workout? Everything logged so far will be discarded.</p>
+      <button class="confirm-yes" id="cancel-workout-yes" onclick="cancelWorkout()">Discard</button>
+      <button class="confirm-no" id="cancel-workout-no" onclick="hideCancelWorkoutConfirm()">Keep</button>
     </div>
     <div class="progress-track" id="workout-progress"></div>
     <div id="workout-block-content"></div>
@@ -1644,6 +1656,7 @@ function renderResumeBanner(){
 }
 
 function resumeWorkout(){
+  hideCancelWorkoutConfirm();
   renderBlock();
   showScreen('screen-workout');
   resumeWtTimer();
@@ -1742,6 +1755,7 @@ function openWarmupDetail(n){
 function exId(dayId, blockIdx, exIdx){ return `${dayId}_b${blockIdx}_e${exIdx}`; }
 
 function startWorkout(planKey, dayIdx){
+  hideCancelWorkoutConfirm();
   state.currentPlan = planKey;
   state.currentDay = dayIdx;
   state.blockIndex = 0;
@@ -2160,6 +2174,29 @@ function prevBlock(){
 function exitWorkout(){
   stopWtTimer();
   showScreen('screen-daylist');
+}
+
+function showCancelWorkoutConfirm(){
+  document.getElementById('cancel-workout-confirm').classList.add('open');
+}
+function hideCancelWorkoutConfirm(){
+  document.getElementById('cancel-workout-confirm').classList.remove('open');
+}
+
+// Abandons the in-progress workout: discards this day's logged sets/choices
+// and the resume pointer, without saving anything to history.
+function cancelWorkout(){
+  hideCancelWorkoutConfirm();
+  const day = currentDayObj();
+  stopWtTimer();
+  if(day){
+    Object.keys(state.setLog).forEach(k => { if(k.startsWith(day.id + '_')) delete state.setLog[k]; });
+    Object.keys(state.optionChoice).forEach(k => { if(k.startsWith(day.id + '_')) delete state.optionChoice[k]; });
+    Object.keys(state.customExerciseName).forEach(k => { if(k.startsWith(day.id + '_')) delete state.customExerciseName[k]; });
+  }
+  clearWorkoutState();
+  showScreen('screen-home');
+  showToast('Workout cancelled');
 }
 
 function finishWorkout(){
