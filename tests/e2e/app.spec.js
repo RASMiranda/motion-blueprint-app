@@ -764,4 +764,34 @@ test.describe('Motion Blueprint', () => {
     expect(s.option).toBeUndefined();
     expect(s.block).toBe(0);
   });
+
+  test('next session pre-selects last time\'s option and re-seeds numbers when you switch', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    // Session 1: use the alternative (Squat Jumps) with weight 40, finish.
+    await page.evaluate(() => chooseOption('t1_b0_e0', 1));
+    await page.locator('.set-row input').first().fill('40');
+    await page.locator('.set-row .check').first().click();
+    for (let i = 0; i < 10; i++) {
+      if (await page.locator('#screen-complete').evaluate(el => el.classList.contains('active'))) break;
+      await page.locator('#workout-next').click();
+    }
+    // Session 2: starts on the alternative with its numbers pre-filled.
+    await page.evaluate(() => showScreen('screen-home'));
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    const start = await page.evaluate(() => ({ opt: state.optionChoice['t1_b0_e0'], w: state.setLog['t1_b0_e0'][0].weight }));
+    expect(start.opt).toBe(1);
+    expect(start.w).toBe('40');
+    // Switching to the default (never logged) clears the borrowed number...
+    await page.evaluate(() => chooseOption('t1_b0_e0', 0));
+    expect(await page.evaluate(() => state.setLog['t1_b0_e0'][0].weight)).toBe('');
+    // ...and switching back restores it.
+    await page.evaluate(() => chooseOption('t1_b0_e0', 1));
+    expect(await page.evaluate(() => state.setLog['t1_b0_e0'][0].weight)).toBe('40');
+    // A number the person typed is never overwritten by a switch.
+    await page.evaluate(() => { state.setLog['t1_b0_e0'][0].weight = '55'; chooseOption('t1_b0_e0', 0); });
+    expect(await page.evaluate(() => state.setLog['t1_b0_e0'][0].weight)).toBe('55');
+  });
 });

@@ -117,6 +117,24 @@
     return prev.sets;
   }
 
+  // Works out which option was used last time for an exercise slot, so a
+  // fresh start can pre-select it (and its pre-fill numbers line up with
+  // what's shown). `prior` is the stored exercise at the same flat position,
+  // `optionNames` the slot's option names in order ([default name] when it
+  // has no alternatives), `blockLabel` the block the slot sits in now.
+  // Returns { choice: <index> } for an official option, { choice: 'custom',
+  // name } for a typed-in one, or null when there's nothing safe to carry
+  // over. A custom name is only trusted when the block label also matches,
+  // so a day whose exercise list changed can't misattribute a different
+  // exercise's name to this slot.
+  function resolvePriorChoice(prior, optionNames, blockLabel) {
+    if (!prior || typeof prior.name !== 'string' || !prior.name) return null;
+    const idx = Array.isArray(optionNames) ? optionNames.indexOf(prior.name) : -1;
+    if (idx >= 0) return { choice: idx };
+    if (prior.blockLabel === blockLabel) return { choice: 'custom', name: prior.name };
+    return null;
+  }
+
   return {
     EXPORT_FORMAT_VERSION,
     generateSessionId,
@@ -125,6 +143,7 @@
     parseImportPayload,
     mergeImportedSessions,
     findLastSessionForDay,
-    findPriorSets
+    findPriorSets,
+    resolvePriorChoice
   };
 });

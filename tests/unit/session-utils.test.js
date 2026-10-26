@@ -193,3 +193,28 @@ test('findPriorSets', async (t) => {
     assert.equal(SessionUtils.findPriorSets(lastSession, 5, 'Farmer Carry'), null);
   });
 });
+
+test('resolvePriorChoice', async (t) => {
+  const names = ['Box Jumps', 'Squat Jumps (no box)'.split('(')[0].trim()];
+
+  await t.test('returns the index of the official option used last time', () => {
+    assert.deepEqual(SessionUtils.resolvePriorChoice({ name: 'Squat Jumps', blockLabel: 'A' }, names, 'A'), { choice: 1 });
+  });
+
+  await t.test('returns index 0 when the default was used', () => {
+    assert.deepEqual(SessionUtils.resolvePriorChoice({ name: 'Box Jumps', blockLabel: 'A' }, names, 'A'), { choice: 0 });
+  });
+
+  await t.test('treats an unknown name in the same block as a custom exercise', () => {
+    assert.deepEqual(SessionUtils.resolvePriorChoice({ name: 'Leg Press', blockLabel: 'A' }, names, 'A'), { choice: 'custom', name: 'Leg Press' });
+  });
+
+  await t.test('ignores an unknown name from a different block (the exercise list changed)', () => {
+    assert.equal(SessionUtils.resolvePriorChoice({ name: 'Leg Press', blockLabel: 'B' }, names, 'A'), null);
+  });
+
+  await t.test('returns null with no prior exercise or no name', () => {
+    assert.equal(SessionUtils.resolvePriorChoice(null, names, 'A'), null);
+    assert.equal(SessionUtils.resolvePriorChoice({ name: '' }, names, 'A'), null);
+  });
+});
