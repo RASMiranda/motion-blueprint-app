@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.7.3 (2026-10-26)
+
+### Fixed
+- ✅ **Old session data no longer leaks into a new workout** — starting a day again after backing out of it, or after starting a different day, now begins clean instead of showing the earlier attempt's ticked sets, weights and exercise choices. Tapping the day that's already in progress picks it up where you left off.
+- ✅ **"In progress" banner stays correct** — just opening another plan's day list no longer changes which workout the banner points to.
+- ✅ **Timer survives leaving the workout screen** — going back with the arrow pauses the timer instead of resetting it, and it resumes when you return.
+- ✅ **Exercise options carry over between sessions** — a new session pre-selects the option you used last time with its numbers pre-filled, and switching option swaps in that exercise's last numbers instead of leaving the previous exercise's weights behind. Anything you typed or ticked is never overwritten.
+
 ## v1.7.2 (2026-10-11)
 
 ### Improved
