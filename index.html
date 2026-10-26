@@ -1678,7 +1678,10 @@ function resumeWorkout(){
 }
 
 function openPlan(key){
-  state.currentPlan = key;
+  // Deliberately does NOT touch state.currentPlan: that field (with
+  // currentDay) is the persisted "In progress" pointer. Merely browsing
+  // another plan's day list used to overwrite half of it, so the resume
+  // banner pointed at a different workout. startWorkout() sets it for real.
   const plan = PLANS[key];
   document.getElementById('daylist-eyebrow').textContent = plan.eyebrow;
   document.getElementById('daylist-title').textContent = plan.title;
@@ -1769,12 +1772,31 @@ function openWarmupDetail(n){
    ============================================================ */
 function exId(dayId, blockIdx, exIdx){ return `${dayId}_b${blockIdx}_e${exIdx}`; }
 
+// Drops any saved in-progress logs/choices for one day (keyed by day.id).
+// Used when a day is started fresh, so leftovers from an abandoned earlier
+// attempt (backed out via the arrow, or never finished) can't masquerade as
+// this session's ticked sets, weights or exercise options.
+function discardDayLogs(dayId){
+  [state.setLog, state.optionChoice, state.customExerciseName].forEach(obj => {
+    Object.keys(obj).forEach(k => { if(k.startsWith(dayId + '_')) delete obj[k]; });
+  });
+}
+
 function startWorkout(planKey, dayIdx){
   hideCancelWorkoutConfirm();
+  const day = PLANS[planKey].days[dayIdx];
+  // Tapping the day that is already in progress continues it (same block,
+  // same logged sets, timer intact) instead of silently restarting over
+  // half-kept data.
+  if(state.currentPlan === planKey && state.currentDay === dayIdx
+     && Object.keys(state.setLog).some(k => k.startsWith(day.id + '_'))){
+    resumeWorkout();
+    return;
+  }
+  discardDayLogs(day.id);
   state.currentPlan = planKey;
   state.currentDay = dayIdx;
   state.blockIndex = 0;
-  const day = PLANS[planKey].days[dayIdx];
   // Pre-fill from the most recent logged session of this same day, so a
   // fresh start isn't blank — last time's weights are the natural
   // reference point for progressive overload. Only ever used to seed a
@@ -2249,7 +2271,21 @@ function slideBlockIn(dir, fromPx){
   el.addEventListener('touchcancel', () => { start = null; dragging = false; reset(); }, { passive: true });
 })();
 function exitWorkout(){
-  stopWtTimer();
+  // Leaving via the back arrow keeps the workout "In progress", so PAUSE the
+  // timer (keep elapsed time, persist it) rather than reset it the way
+  // finishing/cancelling does; resuming from the banner then picks it up.
+  if(wtInterval){ clearInterval(wtInterval); wtInterval = null; }
+  const t = state.workoutTimer;
+  if(t && t.running){
+    t.elapsedMs += t.resumedAt ? Date.now() - t.resumedAt : 0;
+    t.running = false;
+    t.resumedAt = null;
+    t.autoPaused = true; // paused by leaving, not by the user: resume restarts it
+  }
+  const chip = document.getElementById('workout-timer-chip');
+  if(chip) chip.style.display = 'none';
+  document.title = 'Motion Blueprint';
+  saveStateNow();
   showScreen('screen-daylist');
 }
 
@@ -2613,6 +2649,14 @@ function resumeWtTimer(){
   // Guard: if running but resumedAt is missing, fix it so wtTick is safe.
   if(state.workoutTimer.running && !state.workoutTimer.resumedAt){
     state.workoutTimer.resumedAt = Date.now();
+  }
+  // Timer was only paused because the person left the workout screen
+  // (see exitWorkout) — pick it back up from the elapsed time kept.
+  if(state.workoutTimer.autoPaused){
+    delete state.workoutTimer.autoPaused;
+    state.workoutTimer.running = true;
+    state.workoutTimer.resumedAt = Date.now();
+    saveStateNow();
   }
   if(wtInterval) clearInterval(wtInterval);
   _mountWtChip();
