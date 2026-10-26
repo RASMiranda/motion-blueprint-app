@@ -1678,7 +1678,10 @@ function resumeWorkout(){
 }
 
 function openPlan(key){
-  state.currentPlan = key;
+  // Deliberately does NOT touch state.currentPlan: that field (with
+  // currentDay) is the persisted "In progress" pointer. Merely browsing
+  // another plan's day list used to overwrite half of it, so the resume
+  // banner pointed at a different workout. startWorkout() sets it for real.
   const plan = PLANS[key];
   document.getElementById('daylist-eyebrow').textContent = plan.eyebrow;
   document.getElementById('daylist-title').textContent = plan.title;
@@ -1769,12 +1772,31 @@ function openWarmupDetail(n){
    ============================================================ */
 function exId(dayId, blockIdx, exIdx){ return `${dayId}_b${blockIdx}_e${exIdx}`; }
 
+// Drops any saved in-progress logs/choices for one day (keyed by day.id).
+// Used when a day is started fresh, so leftovers from an abandoned earlier
+// attempt (backed out via the arrow, or never finished) can't masquerade as
+// this session's ticked sets, weights or exercise options.
+function discardDayLogs(dayId){
+  [state.setLog, state.optionChoice, state.customExerciseName].forEach(obj => {
+    Object.keys(obj).forEach(k => { if(k.startsWith(dayId + '_')) delete obj[k]; });
+  });
+}
+
 function startWorkout(planKey, dayIdx){
   hideCancelWorkoutConfirm();
+  const day = PLANS[planKey].days[dayIdx];
+  // Tapping the day that is already in progress continues it (same block,
+  // same logged sets, timer intact) instead of silently restarting over
+  // half-kept data.
+  if(state.currentPlan === planKey && state.currentDay === dayIdx
+     && Object.keys(state.setLog).some(k => k.startsWith(day.id + '_'))){
+    resumeWorkout();
+    return;
+  }
+  discardDayLogs(day.id);
   state.currentPlan = planKey;
   state.currentDay = dayIdx;
   state.blockIndex = 0;
-  const day = PLANS[planKey].days[dayIdx];
   // Pre-fill from the most recent logged session of this same day, so a
   // fresh start isn't blank — last time's weights are the natural
   // reference point for progressive overload. Only ever used to seed a
@@ -1789,16 +1811,17 @@ function startWorkout(planKey, dayIdx){
     block.exercises.forEach((exc, ei) => {
       const id = exId(day.id, bi, ei);
       if(!state.setLog[id]){
-        const priorSets = SessionUtils.findPriorSets(lastSession, flatIdx, performedNameFor(exc, id));
-        state.setLog[id] = Array.from({length: exc.sets}, (_, si) => {
-          const prev = priorSets && priorSets[si];
-          return {
-            weight: prev ? prev.weight : '',
-            reps: prev ? prev.reps : '',
-            rpe: prev ? prev.rpe : '',
-            checked: false
-          };
-        });
+        // Pre-select the option used last time, so the pre-filled numbers
+        // belong to the exercise that's actually shown.
+        const prior = lastSession && Array.isArray(lastSession.exercises) ? lastSession.exercises[flatIdx] : null;
+        const r = SessionUtils.resolvePriorChoice(prior, optionNamesFor(exc), block.label);
+        if(r && r.choice === 'custom'){
+          state.optionChoice[id] = 'custom';
+          state.customExerciseName[id] = r.name;
+        } else if(r && r.choice > 0){
+          state.optionChoice[id] = r.choice;
+        }
+        state.setLog[id] = seedSetsFor(exc, id, lastSession, flatIdx);
       }
       flatIdx++;
     });
@@ -1807,6 +1830,49 @@ function startWorkout(planKey, dayIdx){
   renderBlock();
   showScreen('screen-workout');
   startWtTimer();
+}
+
+// Names of an exercise slot's selectable options, in button order (just the
+// default name when it has no alternatives). Matches performedNameFor().
+function optionNamesFor(exc){
+  return exc.options ? exc.options.map(o => o.l.split('(')[0].trim()) : [exc.name];
+}
+
+// Finds an exercise by id in a day, with its block and flat position (the
+// same order finishWorkout() stores exercises in).
+function locateExercise(day, id){
+  let flatIdx = 0;
+  for(let bi = 0; bi < day.blocks.length; bi++){
+    const block = day.blocks[bi];
+    for(let ei = 0; ei < block.exercises.length; ei++){
+      if(exId(day.id, bi, ei) === id) return { block, exc: block.exercises[ei], flatIdx };
+      flatIdx++;
+    }
+  }
+  return null;
+}
+
+// Fresh (unchecked) sets for exercise `id`, pre-filled from last session
+// only when last time was the same exercise as the one currently selected.
+// A custom option with no name typed yet gets blank sets, never the default
+// exercise's numbers.
+function seedSetsFor(exc, id, lastSession, flatIdx){
+  let prior = null;
+  if(state.optionChoice[id] === 'custom'){
+    const typed = (state.customExerciseName[id] || '').trim();
+    if(typed) prior = SessionUtils.findPriorSets(lastSession, flatIdx, typed);
+  } else {
+    prior = SessionUtils.findPriorSets(lastSession, flatIdx, performedNameFor(exc, id));
+  }
+  return Array.from({length: exc.sets}, (_, si) => {
+    const prev = prior && prior[si];
+    return {
+      weight: prev ? prev.weight : '',
+      reps: prev ? prev.reps : '',
+      rpe: prev ? prev.rpe : '',
+      checked: false
+    };
+  });
 }
 
 function currentDayObj(){
@@ -2148,7 +2214,28 @@ function buildMediaRowHtml(displayName, videoId){
 }
 
 function chooseOption(id, idx){
-  state.optionChoice[id] = idx;
+  // Switching exercise option: if nothing has been logged on this exercise
+  // and its numbers are still just the pre-fill (or blank), swap them for
+  // last time's numbers of the newly chosen exercise (or blank), so one
+  // exercise's weights never sit under another. Anything typed or ticked
+  // is left alone.
+  const day = currentDayObj();
+  const loc = day && locateExercise(day, id);
+  const log = state.setLog[id];
+  if(loc && log && !log.some(s => s.checked)){
+    const last = SessionUtils.findLastSessionForDay(
+      state.history, PLANS[state.currentPlan].title, `${day.label} — ${day.name}`
+    );
+    const oldSeed = seedSetsFor(loc.exc, id, last, loc.flatIdx);
+    const untouched = log.every((s, i) =>
+      String(s.weight) === String(oldSeed[i].weight) &&
+      String(s.reps) === String(oldSeed[i].reps) &&
+      String(s.rpe) === String(oldSeed[i].rpe));
+    state.optionChoice[id] = idx;
+    if(untouched) state.setLog[id] = seedSetsFor(loc.exc, id, last, loc.flatIdx);
+  } else {
+    state.optionChoice[id] = idx;
+  }
   saveStateNow();
   renderBlock();
 }
@@ -2249,7 +2336,21 @@ function slideBlockIn(dir, fromPx){
   el.addEventListener('touchcancel', () => { start = null; dragging = false; reset(); }, { passive: true });
 })();
 function exitWorkout(){
-  stopWtTimer();
+  // Leaving via the back arrow keeps the workout "In progress", so PAUSE the
+  // timer (keep elapsed time, persist it) rather than reset it the way
+  // finishing/cancelling does; resuming from the banner then picks it up.
+  if(wtInterval){ clearInterval(wtInterval); wtInterval = null; }
+  const t = state.workoutTimer;
+  if(t && t.running){
+    t.elapsedMs += t.resumedAt ? Date.now() - t.resumedAt : 0;
+    t.running = false;
+    t.resumedAt = null;
+    t.autoPaused = true; // paused by leaving, not by the user: resume restarts it
+  }
+  const chip = document.getElementById('workout-timer-chip');
+  if(chip) chip.style.display = 'none';
+  document.title = 'Motion Blueprint';
+  saveStateNow();
   showScreen('screen-daylist');
 }
 
@@ -2613,6 +2714,14 @@ function resumeWtTimer(){
   // Guard: if running but resumedAt is missing, fix it so wtTick is safe.
   if(state.workoutTimer.running && !state.workoutTimer.resumedAt){
     state.workoutTimer.resumedAt = Date.now();
+  }
+  // Timer was only paused because the person left the workout screen
+  // (see exitWorkout) — pick it back up from the elapsed time kept.
+  if(state.workoutTimer.autoPaused){
+    delete state.workoutTimer.autoPaused;
+    state.workoutTimer.running = true;
+    state.workoutTimer.resumedAt = Date.now();
+    saveStateNow();
   }
   if(wtInterval) clearInterval(wtInterval);
   _mountWtChip();

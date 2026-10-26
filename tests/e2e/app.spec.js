@@ -699,4 +699,99 @@ test.describe('Motion Blueprint', () => {
     expect(result.after).toBe('');
     expect(result.block).toBe(1);
   });
+
+  // --- stale / mismatched in-progress session state -----------------------
+
+  test('browsing another plan does not change the "In progress" banner', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').nth(1).click();
+    await page.locator('.set-row .check').first().click();
+    await page.locator('#screen-workout .back').click();
+    await page.evaluate(() => showScreen('screen-home'));
+    await expect(page.locator('#resume-banner-wrap')).toContainText('Bench Press Focus');
+
+    // Only open the other plan's day list — start nothing — then flush saves.
+    await page.locator('.plan-card', { hasText: 'Upper / Lower Blueprint' }).click();
+    await page.evaluate(() => { saveStateNow(); showScreen('screen-home'); });
+    await expect(page.locator('#resume-banner-wrap')).toContainText('Bench Press Focus');
+    await expect(page.locator('#resume-banner-wrap')).toContainText('3-Day Total Body');
+  });
+
+  test('backing out and re-tapping the same day resumes it with its timer kept', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    await page.locator('.set-row .check').first().click();
+    await page.waitForTimeout(1200);
+    await page.locator('#screen-workout .back').click();
+
+    const afterExit = await page.evaluate(() => ({ ...state.workoutTimer }));
+    expect(afterExit.running).toBe(false);
+    expect(afterExit.elapsedMs).toBeGreaterThan(1000);
+
+    await page.locator('#daylist-items .day-card').first().click();
+    await expect(page.locator('#screen-workout')).toBeVisible();
+    const after = await page.evaluate(() => ({
+      checked: state.setLog['t1_b0_e0'][0].checked,
+      block: state.blockIndex,
+      elapsed: state.workoutTimer.elapsedMs,
+    }));
+    expect(after.checked).toBe(true);
+    expect(after.elapsed).toBeGreaterThanOrEqual(afterExit.elapsedMs);
+    await expect(page.locator('#workout-timer-chip')).toHaveClass(/running/);
+  });
+
+  test('starting a different day, then returning to an abandoned one, starts it clean', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    // Day 1: tick a set and pick the alternative, then back out.
+    await page.locator('#daylist-items .day-card').first().click();
+    await page.locator('.set-row .check').first().click();
+    await page.evaluate(() => chooseOption('t1_b0_e0', 1));
+    await page.locator('#screen-workout .back').click();
+    // Day 2: start it (this replaces the in-progress pointer), back out.
+    await page.locator('#daylist-items .day-card').nth(1).click();
+    await page.locator('#screen-workout .back').click();
+    // Day 1 again: no longer in progress, so it must start from scratch.
+    await page.locator('#daylist-items .day-card').first().click();
+    const s = await page.evaluate(() => ({
+      checked: state.setLog['t1_b0_e0'].map(x => x.checked),
+      option: state.optionChoice['t1_b0_e0'],
+      block: state.blockIndex,
+    }));
+    expect(s.checked.every(c => c === false)).toBe(true);
+    expect(s.option).toBeUndefined();
+    expect(s.block).toBe(0);
+  });
+
+  test('next session pre-selects last time\'s option and re-seeds numbers when you switch', async ({ page }) => {
+    await gotoAndSettle(page);
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    // Session 1: use the alternative (Squat Jumps) with weight 40, finish.
+    await page.evaluate(() => chooseOption('t1_b0_e0', 1));
+    await page.locator('.set-row input').first().fill('40');
+    await page.locator('.set-row .check').first().click();
+    for (let i = 0; i < 10; i++) {
+      if (await page.locator('#screen-complete').evaluate(el => el.classList.contains('active'))) break;
+      await page.locator('#workout-next').click();
+    }
+    // Session 2: starts on the alternative with its numbers pre-filled.
+    await page.evaluate(() => showScreen('screen-home'));
+    await page.locator('.plan-card', { hasText: 'Total Body Blueprint' }).click();
+    await page.locator('#daylist-items .day-card').first().click();
+    const start = await page.evaluate(() => ({ opt: state.optionChoice['t1_b0_e0'], w: state.setLog['t1_b0_e0'][0].weight }));
+    expect(start.opt).toBe(1);
+    expect(start.w).toBe('40');
+    // Switching to the default (never logged) clears the borrowed number...
+    await page.evaluate(() => chooseOption('t1_b0_e0', 0));
+    expect(await page.evaluate(() => state.setLog['t1_b0_e0'][0].weight)).toBe('');
+    // ...and switching back restores it.
+    await page.evaluate(() => chooseOption('t1_b0_e0', 1));
+    expect(await page.evaluate(() => state.setLog['t1_b0_e0'][0].weight)).toBe('40');
+    // A number the person typed is never overwritten by a switch.
+    await page.evaluate(() => { state.setLog['t1_b0_e0'][0].weight = '55'; chooseOption('t1_b0_e0', 0); });
+    expect(await page.evaluate(() => state.setLog['t1_b0_e0'][0].weight)).toBe('55');
+  });
 });
